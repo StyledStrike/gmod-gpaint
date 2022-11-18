@@ -122,10 +122,12 @@ end
     and tracking of all screens, but hey, it works.
 ]]
 
-local consts = {
-    INPUT_DISTANCE = 200,
-    RENDER_DISTANCE_SQR = 4000 * 4000
-}
+local function getMaxRenderDistanceSqr()
+    local cvarRenderDistance = GetConVar('gpaint_max_render_distance')
+    local value = cvarRenderDistance and cvarRenderDistance:GetFloat() or 3000
+
+    return value * value
+end
 
 local IsValid = IsValid
 local focusPreventionDelay = 0
@@ -139,6 +141,7 @@ hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
 
     local ply = LocalPlayer()
     local eyePos = ply:GetShootPos()
+    local renderDistanceSqr = getMaxRenderDistanceSqr()
 
     -- lets use the trace system to detect
     -- which screen should receive input
@@ -147,7 +150,7 @@ hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
     if RealTime() > focusPreventionDelay and not vgui.CursorVisible() then
         local tr = util.TraceLine{
             start = eyePos,
-            endpos = eyePos + ply:GetAimVector() * consts.INPUT_DISTANCE,
+            endpos = eyePos + ply:GetAimVector() * 200,
             ignoreworld = true,
             filter = ply
         }
@@ -162,7 +165,7 @@ hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
         local ent = scr.entity
 
         if IsValid( ent ) then
-            local isVisible = eyePos:DistToSqr( ent:GetPos() ) < consts.RENDER_DISTANCE_SQR
+            local isVisible = eyePos:DistToSqr( ent:GetPos() ) < renderDistanceSqr
 
             if isVisible ~= scr.isVisible then
                 scr.isVisible = isVisible
