@@ -1,0 +1,13 @@
+{
+	"title": "GPaint",
+	"type": "entity",
+	"tags":	["fun", "roleplay"],
+	"ignore": [
+		".git*",
+		"*.txt",
+		"*.md",
+        "*.yml",
+		"glualint.json",
+		"LICENSE"
+	]
+}
