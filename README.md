@@ -3,6 +3,7 @@
 Create, save and load drawings in Garry's Mod!
 
 [![GLuaLint](https://github.com/StyledStrike/gmod-gpaint/actions/workflows/glualint.yml/badge.svg)](https://github.com/FPtje/GLuaFixer)
+[![Workshop Page](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-steam-workshop.jross.me%2F2697023796%2Fsubscriptions-text)](https://steamcommunity.com/sharedfiles/filedetails/?id=2697023796)
 
 ## Features
 
