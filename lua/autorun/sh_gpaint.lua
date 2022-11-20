@@ -5,13 +5,13 @@ GPaint = {
 CreateConVar(
     'gpaint_max_render_distance',
     '3000',
-    bit.bor(FCVAR_ARCHIVE, FCVAR_REPLICATED),
+    bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED ),
     '[GPaint] How close players need to be before syncing and rendering screens. Higher values can affect network performance',
     300, 9999
 )
 
 function GPaint.LogF( str, ... )
-    MsgC( Color( 182,0,206 ), '[GPaint] ', color_white, string.format( str, ... ), '\n' )
+    MsgC( Color( 182, 0, 206 ), '[GPaint] ', color_white, string.format( str, ... ), '\n' )
 end
 
 if SERVER then
