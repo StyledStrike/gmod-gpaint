@@ -200,12 +200,12 @@ function Screen:OnHide()
 end
 
 -- called from the menu when the user opened a file
-function Screen:OnOpenImage( path )
-    self.filePath = string.sub( path, 6 )
+function Screen:OnOpenImage( relativePath )
+    self.relativeFilePath = relativePath
     self.isDirty = false
 
-    self.menu:SetTitle( self.filePath )
-    self:RenderImageFile( path, true )
+    self.menu:SetTitle( self.relativeFilePath )
+    self:RenderImageFile( 'data/gpaint/' .. relativePath, true )
 end
 
 function Screen:OnPenDrag( x, y, reset, color )

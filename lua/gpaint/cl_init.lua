@@ -290,7 +290,7 @@ net.Receive( 'gpaint.command', function()
 
             scr:RenderImageFile( 'data/' .. path )
             scr.menu:SetTitle()
-            scr.filePath = nil
+            scr.relativeFilePath = nil
             scr.isDirty = false
             scr.isBusy = false
         end )
@@ -305,7 +305,7 @@ net.Receive( 'gpaint.command', function()
         gnet.StartCommand( gnet.SEND_DATA, scr.entity )
         net.WriteUInt( requestId, 10 )
 
-        if not scr.filePath and not scr.isDirty then
+        if not scr.relativeFilePath and not scr.isDirty then
             -- if we have nothing to send...
             net.WriteBool( false )
         else

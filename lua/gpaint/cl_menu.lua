@@ -40,6 +40,12 @@ local menuItems = {
         paint = drawButton
     },
     {
+        label = langGet( 'gpaint.saveas' ),
+        w = 220, h = 30,
+        clickFuncName = 'OnClickSaveAs',
+        paint = drawButton
+    },
+    {
         label = langGet( 'gpaint.open' ),
         w = 220, h = 30,
         clickFuncName = 'OnClickOpen',
@@ -225,7 +231,7 @@ function GPaintMenu:SetColor( color )
     local h, s, v = ColorToHSV( color )
 
     -- update the color picker
-    local item = menuItems[6]
+    local item = menuItems[7]
 
     item.base = HSVToColor( h, 1, 1 )
     item.hue = 1 - ( h / 360 )
@@ -314,11 +320,11 @@ end
 function GPaintMenu:OnClickNew()
     if self:UnsavedCheck( 'gpaint.new', self.OnClickNew ) then return end
 
-    self.parent.filePath = nil
+    self.parent.relativeFilePath = nil
     self.parent:Clear( true )
 end
 
-function GPaintMenu:OnClickSave()
+function GPaintMenu:OnClickSave( forceNew )
     local data = self.parent:CaptureRT()
 
     local function writeFile( path )
@@ -334,8 +340,10 @@ function GPaintMenu:OnClickSave()
 
         if file.Exists( path, 'DATA' ) then
             if self then
-                self.parent.filePath = path
+                self.parent.relativeFilePath = string.sub( path, 8 ) -- remove "gpaint/"
                 self.parent.isDirty = false
+
+                self:SetTitle( self.parent.relativeFilePath )
             end
 
             notification.AddLegacy( string.format( langGet( 'gpaint.saved_to' ), path ), NOTIFY_GENERIC, 5 )
@@ -344,24 +352,26 @@ function GPaintMenu:OnClickSave()
         end
     end
 
-    local path = self.parent.filePath
+    local relativePath = self.parent.relativeFilePath
 
-    if not path then
+    if not relativePath or forceNew then
         local now = os.date( '*t' )
-        path = string.format( 'gpaint/%04i_%02i_%02i %02i-%02i-%02i', now.year, now.month, now.day, now.hour, now.min, now.sec )
+        relativePath = string.format( '%04i_%02i_%02i %02i-%02i-%02i', now.year, now.month, now.day, now.hour, now.min, now.sec )
     end
 
-    if file.Exists( path, 'DATA' ) then
-        writeFile( path )
+    local fullPath = 'gpaint/' .. relativePath
+
+    if file.Exists( fullPath, 'DATA' ) then
+        writeFile( fullPath )
     else
         Derma_StringRequest(
             langGet( 'gpaint.save' ),
             langGet( 'gpaint.enter_name' ),
-            path,
-            function( newPath )
-                newPath = string.Trim( newPath )
+            relativePath,
+            function( result )
+                relativePath = string.Trim( result )
 
-                if string.len( newPath ) == 0 then
+                if string.len( relativePath ) == 0 then
                     Derma_Message(
                         langGet( 'gpaint.enter_name' ),
                         langGet( 'gpaint.error' ),
@@ -371,14 +381,22 @@ function GPaintMenu:OnClickSave()
                     return
                 end
 
-                if string.Right( newPath, 4 ) ~= '.png' then
-                    newPath = newPath .. '.png'
+                local ext = string.Right( relativePath, 4 )
+
+                if ext ~= '.png' and ext ~= '.jpg' then
+                    relativePath = relativePath .. '.png'
                 end
 
-                writeFile( newPath )
+                fullPath = 'gpaint/' .. relativePath
+
+                writeFile( fullPath )
             end
         )
     end
+end
+
+function GPaintMenu:OnClickSaveAs()
+    self:OnClickSave( true )
 end
 
 function GPaintMenu:OnClickOpen()
@@ -406,14 +424,17 @@ function GPaintMenu:OnClickOpen()
     browser:Dock( FILL )
     browser:SetModels( true )
     browser:SetPath( 'GAME' )
-    browser:SetBaseFolder( 'data' )
-    browser:SetCurrentFolder( 'gpaint' )
+    browser:SetBaseFolder( 'data/gpaint' )
+    browser:SetCurrentFolder( '' )
     browser:SetOpen( true )
     browser.thumbnailQueue = {}
 
     function browser.OnSelect( _, path )
         frame:Close()
-        self.parent:OnOpenImage( path )
+
+        -- tell the screen we wnt to open a image file
+        -- (path is relative, so we remove "data/gpaint/")
+        self.parent:OnOpenImage( string.sub( path, 13 ) )
     end
 
     function browser.OnRightClick( s, path )
@@ -506,7 +527,7 @@ function GPaintMenu:OnClickScreenshot()
     if self:UnsavedCheck( 'gpaint.screenshot', self.OnClickScreenshot ) then return end
 
     GPaint.TakeScreenshot( function( path )
-        self.parent.filePath = nil
+        self.parent.relativeFilePath = nil
         self.parent.isDirty = true
         self.parent:RenderImageFile( 'data/' .. path, true )
     end )
