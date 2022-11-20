@@ -75,7 +75,7 @@ function GPaint.TakeScreenshot( callback )
         if gui.IsGameUIVisible() then
             hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
 
-        elseif input.IsKeyDown(KEY_ENTER) then
+        elseif input.IsKeyDown( KEY_ENTER ) then
             hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
 
             local data = renderCapture{
@@ -110,7 +110,7 @@ function GPaint.TakeScreenshot( callback )
         surface.SetTextPos( x, y )
         surface.DrawText( msg )
         cam.End2D()
-    end)
+    end )
 end
 
 --[[
@@ -125,7 +125,7 @@ end
 ]]
 
 local function getMaxRenderDistanceSqr()
-    local cvarRenderDistance = GetConVar('gpaint_max_render_distance')
+    local cvarRenderDistance = GetConVar( 'gpaint_max_render_distance' )
     local value = cvarRenderDistance and cvarRenderDistance:GetFloat() or 3000
 
     return value * value
@@ -282,7 +282,7 @@ net.Receive( 'gpaint.command', function()
         scr.isBusy = true
         scr:Clear()
 
-        gnet.ReadImage(ply, function( data )
+        gnet.ReadImage( ply, function( data )
             GPaint.EnsureDataDir()
 
             local path = 'gpaint/.temp/net.png'
@@ -293,7 +293,7 @@ net.Receive( 'gpaint.command', function()
             scr.filePath = nil
             scr.isDirty = false
             scr.isBusy = false
-        end)
+        end )
 
     elseif cmd == gnet.AWAIT_DATA then
         scr.isBusy = net.ReadBool()
@@ -317,4 +317,4 @@ net.Receive( 'gpaint.command', function()
 
         net.SendToServer()
     end
-end)
+end )

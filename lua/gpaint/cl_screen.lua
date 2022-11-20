@@ -38,7 +38,7 @@ end
 
 -- based on a example from https://wiki.facepunch.com/gmod/surface.DrawPoly
 local function drawFilledCircle( x, y, radius )
-    local cir = {{x = x, y = y}}
+    local cir = { { x = x, y = y } }
     local idx = 1
 
     -- find the best "quality" for this circle
@@ -270,8 +270,8 @@ function Screen:OnCursor( x, y )
             self.menu:OnCursor( x, y, cursorLeft, resetPen )
         end
     else
-        penX = math.Round(penX)
-        penY = math.Round(penY)
+        penX = math.Round( penX )
+        penY = math.Round( penY )
 
         if newState > 0 then
             self:OnPenDrag( penX, penY, resetPen, self.eraserMode and color_black or self.penColor )
@@ -395,7 +395,7 @@ function Screen:Render()
     if self.isCursorOnMenu and not self.menu:IsDraggingItem() then
         -- draw a green dot
         surface.SetDrawColor( 50, 50, 50, 220 )
-        drawFilledCircle( self.cursorX, self.cursorY,  5)
+        drawFilledCircle( self.cursorX, self.cursorY, 5 )
 
         surface.SetDrawColor( 0, 255, 0, 255 )
         drawFilledCircle( self.cursorX, self.cursorY, 4 )
@@ -444,7 +444,7 @@ function Screen:RenderImageFile( path, transmit )
         local imageMaterial = Material( '../' .. path )
         imageMaterial:GetTexture( '$basetexture' ):Download()
 
-        render.SetMaterial(imageMaterial)
+        render.SetMaterial( imageMaterial )
         render.DrawQuad(
             Vector( 0, 0, 0 ),
             Vector( rtResolution, 0, 0 ),
@@ -467,7 +467,7 @@ function Screen:RenderImageFile( path, transmit )
             gnet.WriteImage( data, function() self.isBusy = false end )
             net.SendToServer()
         end
-    end)
+    end )
 end
 
 -- captures the render target, and returns the image data
