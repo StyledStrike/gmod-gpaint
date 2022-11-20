@@ -75,7 +75,7 @@ function GPaint.TakeScreenshot( callback )
         if gui.IsGameUIVisible() then
             hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
 
-        elseif input.IsKeyDown( KEY_ENTER ) then
+        elseif input.IsKeyDown( KEY_E ) then
             hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
 
             local data = renderCapture{
