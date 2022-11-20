@@ -83,6 +83,14 @@ local function RemoveSubscriber( ply, ent )
     end
 end
 
+local function CanPlayerSubscribe( ply, ent )
+    if ent.subscribers and ent.subscribers[ply:SteamID()] then
+        return false
+    end
+
+    return true
+end
+
 local function GetSubscribers( ent, ignore )
     local subs = ent.subscribers or {}
     local targets = {}
@@ -103,6 +111,8 @@ local streams = {}
 
 local netCommands = {
     [gnet.SUBSCRIBE] = function( ply, ent )
+        if not CanPlayerSubscribe( ply, ent ) then return end
+
         AddSubscriber( ply, ent )
 
         if ply == ent:GetCreator() then
