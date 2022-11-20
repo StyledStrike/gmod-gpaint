@@ -18,10 +18,10 @@ function ENT:CanPlayerDraw( ply )
     if game.SinglePlayer() then return true end
 
     if CPPI then
-        if self:CPPIGetOwner() == ply then return true end
-        if self:CPPICanPhysgun( ply ) then return true end
-        if self:CPPICanPickup( ply ) then return true end
+        if ply == self:CPPIGetOwner() then return true end
     else
         return true
     end
+
+    return false
 end
