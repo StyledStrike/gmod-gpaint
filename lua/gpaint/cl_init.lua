@@ -66,6 +66,8 @@ function GPaint.FreeRT( idx )
     GPaint.LogF( 'RT #%d is ready for reuse.', idx )
 end
 
+local renderCapture = render.Capture
+
 function GPaint.TakeScreenshot( callback )
     local msg = language.GetPhrase( 'gpaint.screenshot_hint' )
 
@@ -76,7 +78,7 @@ function GPaint.TakeScreenshot( callback )
         elseif input.IsKeyDown(KEY_ENTER) then
             hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
 
-            local data = render.Capture{
+            local data = renderCapture{
                 format = 'png',
                 alpha = false,
                 x = 0, y = 0,

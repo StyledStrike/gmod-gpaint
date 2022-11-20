@@ -160,6 +160,7 @@ end
 ]]
 
 local RealTime = RealTime
+local renderCapture = render.Capture
 local langGet = language.GetPhrase
 local gnet = GPaint.network
 
@@ -473,7 +474,7 @@ end
 function Screen:CaptureRT( format )
     render.SetRenderTarget( self.rt )
 
-    local data = render.Capture{
+    local data = renderCapture{
         format = format or 'png',
         x = 0, y = 0,
         w = rtResolution,
