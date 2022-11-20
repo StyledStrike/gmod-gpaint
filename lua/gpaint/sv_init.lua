@@ -3,7 +3,7 @@ util.AddNetworkString( 'gpaint.command' )
 CreateConVar(
     'sbox_maxgpaint_boards',
     '3',
-    bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED),
+    bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED ),
     'Maximum GPaint screens a player can create',
     0
 )
@@ -186,6 +186,7 @@ local netCommands = {
         if not target then return end
 
         local hasData = net.ReadBool()
+        local steamId = ply:SteamID()
 
         ent.requests[id] = nil
 
@@ -201,8 +202,15 @@ local netCommands = {
             gnet.ReadImage( ply, function( data )
                 if not IsValid( ent ) then return end
 
+                if not data then
+                    GPaint.LogF( 'Missing data from %s', steamId )
+
+                    return
+                end
+
                 if #data > gnet.maxDataSize then
                     GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
+
                     return
                 end
 
