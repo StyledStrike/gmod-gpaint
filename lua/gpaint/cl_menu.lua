@@ -145,10 +145,10 @@ local menuItems = {
 
                 local colorX = materials.picker:Width() * 0.5
                 local colorY = math.Clamp( self.hue * materials.picker:Height(), 0, materials.picker:Height() - 1 )
-                local clr = materials.picker:GetColor(colorX, colorY)
+                local clr = materials.picker:GetColor( colorX, colorY )
 
-                local h = ColorToHSV(clr)
-                self.base = HSVToColor(h, 1, 1)
+                local h = ColorToHSV( clr )
+                self.base = HSVToColor( h, 1, 1 )
 
                 mn.parent.penColor = HSVToColor( h, self.saturation, self.value )
             else
@@ -276,7 +276,7 @@ function GPaintMenu:Render( screenHeight )
     surface.SetDrawColor( colors.highlight:Unpack() )
     surface.DrawRect( x, y, w, 30 )
 
-    surface.SetTextPos( x + halfWidth - (textWidth * 0.5), y + 5 )
+    surface.SetTextPos( x + halfWidth - ( textWidth * 0.5 ), y + 5 )
     surface.DrawText( self.title )
 
     ---- menu items
@@ -404,7 +404,7 @@ function GPaintMenu:OnClickOpen()
 
     local browser = vgui.Create( 'DFileBrowser', frame )
     browser:Dock( FILL )
-    browser:SetModels( true)
+    browser:SetModels( true )
     browser:SetPath( 'GAME' )
     browser:SetBaseFolder( 'data' )
     browser:SetCurrentFolder( 'gpaint' )
@@ -466,7 +466,7 @@ function GPaintMenu:OnClickOpen()
                     icon, string.format( '../%s/%s', path, v )
                 }
 
-                icon.PaintOver = function(_, selfW)
+                icon.PaintOver = function( _, selfW )
                     surface.SetDrawColor( 0, 0, 0, 200 )
                     surface.DrawRect( 0, 0, selfW, 20 )
 
