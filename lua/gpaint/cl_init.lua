@@ -265,7 +265,7 @@ net.Receive( 'gpaint.command', function()
     local scr = GetScreenByEntity( ent )
     if not scr then return end
 
-    local cmd = net.ReadUInt( gnet.commandSize )
+    local cmd = net.ReadUInt( gnet.COMMAND_SIZE )
 
     if cmd == gnet.CLEAR then
         scr:Clear()

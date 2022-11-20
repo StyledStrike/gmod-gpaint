@@ -1,12 +1,12 @@
 local network = {
     -- size limit when streaming images over the network
-    maxDataSize = 262144, -- 256 kibibytes
+    MAX_DATA_SIZE = 262144, -- 256 kibibytes
 
     -- max. number of strokes on a net message
-    maxStrokes = 15,
+    MAX_STROKES = 15,
 
     -- used in net.WriteUInt when sending commands
-    commandSize = 3,
+    COMMAND_SIZE = 3,
 
     -- command IDs
     SUBSCRIBE = 0,
@@ -16,17 +16,17 @@ local network = {
     SEND_DATA = 4,
     BROADCAST_DATA = 5,
     REQUEST_DATA = 6,
-    AWAIT_DATA = 7 -- max. value when commandSize == 3
+    AWAIT_DATA = 7 -- max. value when COMMAND_SIZE == 3
 }
 
 function network.StartCommand( id, entity )
     net.Start( 'gpaint.command', false )
     net.WriteEntity( entity )
-    net.WriteUInt( id, network.commandSize )
+    net.WriteUInt( id, network.COMMAND_SIZE )
 end
 
 function network.WriteStrokes( strokes )
-    local count = math.min( #strokes, network.maxStrokes )
+    local count = math.min( #strokes, network.MAX_STROKES )
 
     net.WriteUInt( count, 5 )
 
@@ -52,7 +52,7 @@ function network.WriteStrokes( strokes )
 end
 
 function network.ReadStrokes()
-    local count = math.min( net.ReadUInt(5), network.maxStrokes )
+    local count = math.min( net.ReadUInt( 5 ), network.MAX_STROKES )
     if count < 1 then return {} end
 
     local strokes = {}

@@ -164,7 +164,7 @@ local netCommands = {
 
             if not IsValid( ent ) then return end
 
-            if #data > gnet.maxDataSize then
+            if #data > gnet.MAX_DATA_SIZE then
                 GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
                 return
             end
@@ -208,7 +208,7 @@ local netCommands = {
                     return
                 end
 
-                if #data > gnet.maxDataSize then
+                if #data > gnet.MAX_DATA_SIZE then
                     GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
 
                     return
@@ -227,7 +227,7 @@ net.Receive( 'gpaint.command', function( _, ply )
     local ent = net.ReadEntity()
     if not IsGPaintScreen( ent ) then return end
 
-    local cmd = net.ReadUInt( gnet.commandSize )
+    local cmd = net.ReadUInt( gnet.COMMAND_SIZE )
 
     if netCommands[cmd] then
         netCommands[cmd]( ply, ent )
