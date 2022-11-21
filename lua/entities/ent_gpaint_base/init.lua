@@ -32,6 +32,8 @@ function ENT:Initialize()
         phys:EnableMotion( false )
     end
 
+    if game.SinglePlayer() then return end
+
     -- creator only becomes valid on the next tick
     timer.Simple( 0.3, function()
         if not IsValid( self ) then return end

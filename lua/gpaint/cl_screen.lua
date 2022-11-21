@@ -154,7 +154,7 @@ function GPaint.CreateScreen( entity )
 
     scr.isBusy = true
     scr.shouldSubscribe = false
-    scr.wantsToSubscribe = false
+    scr.wantsToSubscribe = game.SinglePlayer()
 end
 
 --[[
