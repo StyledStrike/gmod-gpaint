@@ -31,6 +31,20 @@ function ENT:Initialize()
     if IsValid( phys ) then
         phys:EnableMotion( false )
     end
+
+    -- creator only becomes valid on the next tick
+    timer.Simple( 0.3, function()
+        if not IsValid( self ) then return end
+
+        local owner = self:GetCreator()
+        if not IsValid( owner ) then return end
+
+        -- tell the screen owner to subscribe right away
+        local gnet = GPaint.network
+
+        gnet.StartCommand( gnet.SUBSCRIBE, self )
+        net.Send( owner )
+    end )
 end
 
 function ENT:UpdateTransmitState()

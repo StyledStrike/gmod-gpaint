@@ -153,6 +153,8 @@ function GPaint.CreateScreen( entity )
     scr.transmitQueue = {}
 
     scr.isBusy = true
+    scr.shouldSubscribe = false
+    scr.wantsToSubscribe = false
 end
 
 --[[
@@ -188,8 +190,7 @@ function Screen:SetPenColor( r, g, b )
 end
 
 function Screen:OnShow()
-    gnet.StartCommand( gnet.SUBSCRIBE, self.entity )
-    net.SendToServer()
+    self.shouldSubscribe = true
 end
 
 function Screen:OnHide()
@@ -236,6 +237,14 @@ function Screen:OnPenDrag( x, y, reset, color )
 end
 
 function Screen:OnCursor( x, y )
+    if not self.wantsToSubscribe then
+        if input.IsKeyDown( KEY_E ) then
+            self.wantsToSubscribe = true
+        end
+
+        return
+    end
+
     if not self.hint then
         self.hint = true
         notification.AddLegacy( langGet( 'gpaint.usage_hint' ), NOTIFY_HINT, 4 )
@@ -317,6 +326,13 @@ function Screen:OnUnfocus()
 end
 
 function Screen:Think()
+    if self.wantsToSubscribe and self.shouldSubscribe then
+        self.shouldSubscribe = false
+
+        gnet.StartCommand( gnet.SUBSCRIBE, self.entity )
+        net.SendToServer()
+    end
+
     -- draws all strokes from the queue into the render target
     if not self.isBusy and self.strokeQueue[1] then
         self:RenderToRT( function()
@@ -388,6 +404,23 @@ function Screen:Render()
         surface.DrawText( msg )
 
         self.busyOverlay = 1
+    end
+
+    if not self.wantsToSubscribe then
+        surface.SetFont( 'CloseCaption_Bold' )
+
+        local msg = langGet( 'gpaint.enable_request' )
+        local tw, th = surface.GetTextSize( msg )
+
+        local x = ( dimensions.w * 0.5 ) - ( tw * 0.5 )
+        local y = ( dimensions.h * 0.5 ) - ( th * 0.5 )
+
+        surface.SetDrawColor( 40, 40, 40, 255 )
+        surface.DrawRect( x - 8, y - 8, tw + 16, th + 16 )
+
+        surface.SetTextColor( 255, 255, 255, 255 )
+        surface.SetTextPos( x, y )
+        surface.DrawText( msg )
     end
 
     if not self.cursorX then return end

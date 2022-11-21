@@ -316,5 +316,10 @@ net.Receive( 'gpaint.command', function()
         end
 
         net.SendToServer()
+
+    elseif cmd == gnet.SUBSCRIBE then
+        -- server wants us to subscribe right away
+        scr.wantsToSubscribe = true
+
     end
 end )
