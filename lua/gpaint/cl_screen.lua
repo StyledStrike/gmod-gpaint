@@ -240,10 +240,13 @@ function Screen:OnCursor( x, y )
     if not self.wantsToSubscribe then
         if input.IsKeyDown( KEY_E ) then
             self.wantsToSubscribe = true
+            self.shouldSubscribe = true
         end
 
         return
     end
+
+    if not self.entity:CanPlayerDraw( LocalPlayer() ) then return end
 
     if not self.hint then
         self.hint = true

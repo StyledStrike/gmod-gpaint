@@ -203,7 +203,7 @@ hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
 
             local x, y
 
-            if ent == aimEntity and ent:CanPlayerDraw( ply ) then
+            if ent == aimEntity then
                 x, y = ent:GetCursorPos( ply )
 
                 -- prevent going off screen
