@@ -51,9 +51,34 @@ local function CancelRequests( ply, ent )
             net.WriteBool( false )
             net.Send( ply )
 
-            GPaint.LogF( '%s cancelled their screen data request', ply:Name() )
+            GPaint.LogF( '%s cancelled their screen data request #%d', ply:Name(), id )
         end
     end
+end
+
+local function FulfillRequest( id, ent, fromPly, targetPly, data )
+    ent.requests[id] = nil
+
+    if not IsValid(targetPly) then return end
+
+    if not data then
+        gnet.StartCommand( gnet.AWAIT_DATA, ent )
+        net.WriteBool( false )
+        net.Send( targetPly )
+
+        return
+    end
+
+    if #data > gnet.MAX_DATA_SIZE then
+        GPaint.LogF( 'Ignoring data from %s (too big)', fromPly:SteamID() )
+
+        return
+    end
+
+    -- send the image data to only one target
+    gnet.StartCommand( gnet.BROADCAST_DATA, ent )
+    gnet.WriteImage( data )
+    net.Send( targetPly )
 end
 
 local function IsGPaintScreen( ent )
@@ -200,38 +225,23 @@ local netCommands = {
         local hasData = net.ReadBool()
         local steamId = ply:SteamID()
 
-        ent.requests[id] = nil
+        if not hasData then
+            FulfillRequest( id, ent, ply, target, nil )
 
-        if IsValid( target ) then
-            if not hasData then
-                gnet.StartCommand( gnet.AWAIT_DATA, ent )
-                net.WriteBool( false )
-                net.Send( target )
+            return
+        end
+
+        gnet.ReadImage( ply, function( data )
+            if not IsValid( ent ) then return end
+
+            if not data then
+                GPaint.LogF( 'Missing data from %s', steamId )
 
                 return
             end
 
-            gnet.ReadImage( ply, function( data )
-                if not IsValid( ent ) then return end
-
-                if not data then
-                    GPaint.LogF( 'Missing data from %s', steamId )
-
-                    return
-                end
-
-                if #data > gnet.MAX_DATA_SIZE then
-                    GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
-
-                    return
-                end
-
-                -- send the image data to only one target
-                gnet.StartCommand( gnet.BROADCAST_DATA, ent )
-                gnet.WriteImage( data )
-                net.Send( target )
-            end )
-        end
+            FulfillRequest( id, ent, ply, target, data )
+        end )
     end
 }
 
