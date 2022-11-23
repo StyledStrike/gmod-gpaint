@@ -80,8 +80,6 @@ function network.ReadStrokes()
     return strokes
 end
 
--- TODO: detect if gm_express is available & use it
-
 function network.WriteImage( data, callback )
     return net.WriteStream( data, callback )
 end
@@ -89,5 +87,14 @@ end
 function network.ReadImage( ply, callback )
     return net.ReadStream( ply, callback )
 end
+
+-- theres no guarantee gm_express will load before GPaint so,
+-- InitPostEntity to the rescue...
+hook.Add( 'InitPostEntity', 'GPaint_CheckExpressAvailability', function()
+    if not game.SinglePlayer() and express then
+        network.USE_EXPRESS = true
+        network.OnExpressLoad()
+    end
+end )
 
 GPaint.network = network

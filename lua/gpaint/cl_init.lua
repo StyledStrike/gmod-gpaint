@@ -256,6 +256,19 @@ local function GetScreenByEntity( ent )
     end
 end
 
+local function RenderImageData( scr, data )
+    GPaint.EnsureDataDir()
+
+    local path = 'gpaint/.temp/net.png'
+    file.Write( path, data )
+
+    scr:RenderImageFile( 'data/' .. path )
+    scr.menu:SetTitle()
+    scr.relativeFilePath = nil
+    scr.isDirty = false
+    scr.isBusy = false
+end
+
 local gnet = GPaint.network
 
 net.Receive( 'gpaint.command', function()
@@ -283,16 +296,7 @@ net.Receive( 'gpaint.command', function()
         scr:Clear()
 
         gnet.ReadImage( ply, function( data )
-            GPaint.EnsureDataDir()
-
-            local path = 'gpaint/.temp/net.png'
-            file.Write( path, data )
-
-            scr:RenderImageFile( 'data/' .. path )
-            scr.menu:SetTitle()
-            scr.relativeFilePath = nil
-            scr.isDirty = false
-            scr.isBusy = false
+            RenderImageData( scr, data )
         end )
 
     elseif cmd == gnet.AWAIT_DATA then
@@ -302,19 +306,35 @@ net.Receive( 'gpaint.command', function()
         -- server wants us to send what the screen looks like
         local requestId = net.ReadUInt( 10 )
 
-        gnet.StartCommand( gnet.SEND_DATA, scr.entity )
-        net.WriteUInt( requestId, 10 )
-
         if not scr.relativeFilePath and not scr.isDirty then
-            -- if we have nothing to send...
+            -- if we have no image data to send...
+            gnet.StartCommand( gnet.SEND_DATA, scr.entity )
+            net.WriteUInt( requestId, 10 )
             net.WriteBool( false )
-        else
-            local data = scr:CaptureRT( 'jpg' )
+            net.SendToServer()
 
-            net.WriteBool( true )
-            gnet.WriteImage( data )
+            return
         end
 
+        local data = scr:CaptureRT( 'jpg' )
+
+        if gnet.USE_EXPRESS then
+            express.Send(
+                'gpaint.transfer',
+                {
+                    requestId = requestId,
+                    ent = scr.entity,
+                    image = data
+                }
+            )
+
+            return
+        end
+
+        gnet.StartCommand( gnet.SEND_DATA, scr.entity )
+        net.WriteUInt( requestId, 10 )
+        net.WriteBool( true )
+        gnet.WriteImage( data )
         net.SendToServer()
 
     elseif cmd == gnet.SUBSCRIBE then
@@ -323,3 +343,17 @@ net.Receive( 'gpaint.command', function()
 
     end
 end )
+
+gnet.OnExpressLoad = function()
+    GPaint.LogF( 'Now we\'re using gm_express!' )
+
+    express.Receive( 'gpaint.transfer', function( data )
+        local ent = data.ent
+        if not IsValid( ent ) then return end
+
+        local scr = GetScreenByEntity( ent )
+        if scr then
+            RenderImageData( scr, data.image )
+        end
+    end )
+end

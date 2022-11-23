@@ -499,6 +499,19 @@ function Screen:RenderImageFile( path, transmit )
             self.isBusy = true
             local data = self:CaptureRT( 'jpg' )
 
+            if gnet.USE_EXPRESS then
+                express.Send(
+                    'gpaint.transfer',
+                    {
+                        ent = self.entity,
+                        image = data
+                    },
+                    function() self.isBusy = false end
+                )
+
+                return
+            end
+
             gnet.StartCommand( gnet.BROADCAST_DATA, self.entity )
             gnet.WriteImage( data, function() self.isBusy = false end )
             net.SendToServer()

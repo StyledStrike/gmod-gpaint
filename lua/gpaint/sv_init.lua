@@ -11,6 +11,29 @@ CreateConVar(
 local IsValid = IsValid
 local gnet = GPaint.network
 
+local function IsGPaintScreen( ent )
+    return IsValid( ent ) and (
+        ent:GetClass() == 'ent_gpaint_base' or
+        ent.Base == 'ent_gpaint_base'
+    )
+end
+
+local function IsValidData( data, fromSteamId )
+    if not data then
+        GPaint.LogF( 'Missing data from %s', fromSteamId )
+
+        return false
+    end
+
+    if #data > gnet.MAX_DATA_SIZE then
+        GPaint.LogF( 'Ignoring data from %s (too big)', fromSteamId )
+
+        return false
+    end
+
+    return true
+end
+
 -- little utility functions that handles screen data requests
 local requestId = 0
 
@@ -59,7 +82,7 @@ end
 local function FulfillRequest( id, ent, fromPly, targetPly, data )
     ent.requests[id] = nil
 
-    if not IsValid(targetPly) then return end
+    if not IsValid( targetPly ) then return end
 
     if not data then
         gnet.StartCommand( gnet.AWAIT_DATA, ent )
@@ -69,23 +92,12 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
         return
     end
 
-    if #data > gnet.MAX_DATA_SIZE then
-        GPaint.LogF( 'Ignoring data from %s (too big)', fromPly:SteamID() )
-
-        return
-    end
+    if not IsValidData( data, fromPly:SteamID() ) then return end
 
     -- send the image data to only one target
     gnet.StartCommand( gnet.BROADCAST_DATA, ent )
     gnet.WriteImage( data )
     net.Send( targetPly )
-end
-
-local function IsGPaintScreen( ent )
-    return IsValid( ent ) and (
-        ent:GetClass() == 'ent_gpaint_base' or
-        ent.Base == 'ent_gpaint_base'
-    )
 end
 
 --[[
@@ -190,6 +202,7 @@ local netCommands = {
     end,
 
     [gnet.BROADCAST_DATA] = function( ply, ent )
+        if gnet.USE_EXPRESS then return end
         if not ent:CanPlayerDraw( ply ) then return end
 
         local steamId = ply:SteamID()
@@ -199,12 +212,7 @@ local netCommands = {
             streams[steamId] = nil
 
             if not IsValid( ent ) then return end
-
-            if #data > gnet.MAX_DATA_SIZE then
-                GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
-
-                return
-            end
+            if not IsValidData( data, steamId ) then return end
 
             local subs = GetSubscribers( ent, ply )
             if #subs == 0 then return end
@@ -217,9 +225,10 @@ local netCommands = {
 
     [gnet.SEND_DATA] = function( ply, ent )
         if not ent.requests then return end
-        local id = net.ReadUInt( 10 )
 
+        local id = net.ReadUInt( 10 )
         local target = ent.requests[id]
+
         if not target then return end
 
         local hasData = net.ReadBool()
@@ -233,12 +242,7 @@ local netCommands = {
 
         gnet.ReadImage( ply, function( data )
             if not IsValid( ent ) then return end
-
-            if not data then
-                GPaint.LogF( 'Missing data from %s', steamId )
-
-                return
-            end
+            if not IsValidData( data, steamId ) then return end
 
             FulfillRequest( id, ent, ply, target, data )
         end )
@@ -255,3 +259,40 @@ net.Receive( 'gpaint.command', function( _, ply )
         netCommands[cmd]( ply, ent )
     end
 end )
+
+gnet.OnExpressLoad = function()
+    GPaint.LogF( 'Now we\'re using gm_express!' )
+
+    express.Receive( 'gpaint.transfer', function( ply, data )
+        if type( data ) ~= 'table' then return end
+
+        local steamId = ply:SteamID()
+        local id = data.requestId
+        local ent = data.ent
+
+        if not IsGPaintScreen( ent ) then return end
+        if not ent:CanPlayerDraw( ply ) then return end
+
+        if id then
+            local target = ent.requests[id]
+            if not target then return end
+
+            FulfillRequest( id, ent, ply, target, data.image )
+
+        else
+            if not IsValidData( data.image, steamId ) then return end
+
+            local subs = GetSubscribers( ent, ply )
+            if #subs == 0 then return end
+
+            express.Send(
+                'gpaint.transfer',
+                {
+                    ent = ent,
+                    image = data.image
+                },
+                subs
+            )
+        end
+    end )
+end
