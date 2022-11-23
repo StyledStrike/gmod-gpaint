@@ -120,6 +120,7 @@ local netCommands = {
             gnet.StartCommand( gnet.AWAIT_DATA, ent )
             net.WriteBool( false )
             net.Send( ply )
+
         else
             -- ask the entity owner to send what the
             -- screen looks like just to this new subscriber
@@ -176,6 +177,7 @@ local netCommands = {
 
             if #data > gnet.MAX_DATA_SIZE then
                 GPaint.LogF( 'Ignoring data from %s (too big)', steamId )
+
                 return
             end
 
