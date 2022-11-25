@@ -94,6 +94,19 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
 
     if not IsValidData( data, fromPly:SteamID() ) then return end
 
+    if gnet.USE_EXPRESS then
+        express.Send(
+            'gpaint.transfer',
+            {
+                ent = ent,
+                image = data
+            },
+            { targetPly }
+        )
+
+        return
+    end
+
     -- send the image data to only one target
     gnet.StartCommand( gnet.BROADCAST_DATA, ent )
     gnet.WriteImage( data )
