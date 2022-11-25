@@ -95,6 +95,10 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
     if not IsValidData( data, fromPly:SteamID() ) then return end
 
     if gnet.USE_EXPRESS then
+        gnet.StartCommand( gnet.AWAIT_DATA, ent )
+        net.WriteBool( true )
+        net.Send( targetPly )
+
         express.Send(
             'gpaint.transfer',
             {
@@ -297,6 +301,10 @@ gnet.OnExpressLoad = function()
 
             local subs = GetSubscribers( ent, ply )
             if #subs == 0 then return end
+
+            gnet.StartCommand( gnet.AWAIT_DATA, ent )
+            net.WriteBool( true )
+            net.Send( subs )
 
             express.Send(
                 'gpaint.transfer',
