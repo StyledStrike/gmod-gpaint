@@ -1,3 +1,4 @@
+resource.AddWorkshop( '2697023796' )
 util.AddNetworkString( 'gpaint.command' )
 
 CreateConVar(
