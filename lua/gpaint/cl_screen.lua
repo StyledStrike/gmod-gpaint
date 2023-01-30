@@ -10,13 +10,13 @@ local screenQuad = {
 }
 
 local rtMaterial = CreateMaterial(
-    'mat_gpaint_rt',
-    'UnlitGeneric',
+    "mat_gpaint_rt",
+    "UnlitGeneric",
     {
-        ['$nolod'] = 1,
-        ['$ignorez'] = 1,
-        ['$vertexcolor'] = 1,
-        ['$vertexalpha'] = 1
+        ["$nolod"] = 1,
+        ["$ignorez"] = 1,
+        ["$vertexcolor"] = 1,
+        ["$vertexalpha"] = 1
     }
 )
 
@@ -62,7 +62,7 @@ local function drawFilledCircle( x, y, radius )
     surface.DrawPoly( cir )
 end
 
--- Draws a filled line with the specified thickness. (thanks to Wiremod's EGP code)
+-- Draws a filled line with the specified thickness. (thanks to Wiremod"s EGP code)
 -- https://github.com/wiremod/wire/blob/master/lua/entities/gmod_wire_egp/lib/egplib/usefulfunctions.lua#L253
 local function drawFilledLine( x1, y1, x2, y2, thickness )
     if thickness <= 1 then
@@ -206,7 +206,7 @@ function Screen:OnOpenImage( relativePath )
     self.isDirty = false
 
     self.menu:SetTitle( self.relativeFilePath )
-    self:RenderImageFile( 'data/gpaint/' .. relativePath, true )
+    self:RenderImageFile( "data/gpaint/" .. relativePath, true )
 end
 
 function Screen:OnPenDrag( x, y, reset, color )
@@ -250,7 +250,7 @@ function Screen:OnCursor( x, y )
 
     if not self.hint then
         self.hint = true
-        notification.AddLegacy( langGet( 'gpaint.usage_hint' ), NOTIFY_HINT, 4 )
+        notification.AddLegacy( langGet( "gpaint.usage_hint" ), NOTIFY_HINT, 4 )
     end
 
     local cursorLeft = input.IsMouseDown( MOUSE_LEFT )
@@ -367,7 +367,7 @@ function Screen:Think()
 end
 
 function Screen:Render()
-    rtMaterial:SetTexture( '$basetexture', self.rt )
+    rtMaterial:SetTexture( "$basetexture", self.rt )
 
     render.SetMaterial( rtMaterial )
     render.DrawQuad( screenQuad[1], screenQuad[2], screenQuad[3], screenQuad[4] )
@@ -391,9 +391,9 @@ function Screen:Render()
     end
 
     if self.isBusy then
-        surface.SetFont( 'CloseCaption_Bold' )
+        surface.SetFont( "CloseCaption_Bold" )
 
-        local msg = langGet( 'gpaint.loading' )
+        local msg = langGet( "gpaint.loading" )
         local tw, th = surface.GetTextSize( msg )
 
         local x = ( dimensions.w * 0.5 ) - ( tw * 0.5 )
@@ -410,9 +410,9 @@ function Screen:Render()
     end
 
     if not self.wantsToSubscribe then
-        surface.SetFont( 'CloseCaption_Bold' )
+        surface.SetFont( "CloseCaption_Bold" )
 
-        local msg = langGet( 'gpaint.enable_request' )
+        local msg = langGet( "gpaint.enable_request" )
         local tw, th = surface.GetTextSize( msg )
 
         local x = ( dimensions.w * 0.5 ) - ( tw * 0.5 )
@@ -477,8 +477,8 @@ end
 -- loads and renders a image file to the render target
 function Screen:RenderImageFile( path, transmit )
     self:RenderToRT( function()
-        local imageMaterial = Material( '../' .. path )
-        imageMaterial:GetTexture( '$basetexture' ):Download()
+        local imageMaterial = Material( "../" .. path )
+        imageMaterial:GetTexture( "$basetexture" ):Download()
 
         render.SetMaterial( imageMaterial )
         render.DrawQuad(
@@ -497,11 +497,11 @@ function Screen:RenderImageFile( path, transmit )
 
         if transmit then
             self.isBusy = true
-            local data = self:CaptureRT( 'jpg' )
+            local data = self:CaptureRT( "jpg" )
 
             if gnet.USE_EXPRESS then
                 express.Send(
-                    'gpaint.transfer',
+                    "gpaint.transfer",
                     {
                         ent = self.entity,
                         image = data
@@ -524,7 +524,7 @@ function Screen:CaptureRT( format )
     render.SetRenderTarget( self.rt )
 
     local data = renderCapture{
-        format = format or 'png',
+        format = format or "png",
         x = 0, y = 0,
         w = rtResolution,
         h = rtResolution,

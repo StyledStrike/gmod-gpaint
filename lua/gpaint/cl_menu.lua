@@ -2,9 +2,9 @@ local surface = surface
 local langGet = language.GetPhrase
 
 local materials = {
-    picker = Material( 'gui/colors.png' ),
-    saturation = Material( 'vgui/gradient-r' ),
-    value = Material( 'vgui/gradient-d' )
+    picker = Material( "gui/colors.png" ),
+    saturation = Material( "vgui/gradient-r" ),
+    value = Material( "vgui/gradient-d" )
 }
 
 local colors = {
@@ -28,37 +28,37 @@ end
 
 local menuItems = {
     {
-        label = langGet( 'gpaint.new' ),
+        label = langGet( "gpaint.new" ),
         w = 220, h = 30,
-        clickFuncName = 'OnClickNew',
+        clickFuncName = "OnClickNew",
         paint = drawButton
     },
     {
-        label = langGet( 'gpaint.save' ),
+        label = langGet( "gpaint.save" ),
         w = 220, h = 30,
-        clickFuncName = 'OnClickSave',
+        clickFuncName = "OnClickSave",
         paint = drawButton
     },
     {
-        label = langGet( 'gpaint.saveas' ),
+        label = langGet( "gpaint.saveas" ),
         w = 220, h = 30,
-        clickFuncName = 'OnClickSaveAs',
+        clickFuncName = "OnClickSaveAs",
         paint = drawButton
     },
     {
-        label = langGet( 'gpaint.open' ),
+        label = langGet( "gpaint.open" ),
         w = 220, h = 30,
-        clickFuncName = 'OnClickOpen',
+        clickFuncName = "OnClickOpen",
         paint = drawButton
     },
     {
-        label = langGet( 'gpaint.screenshot' ),
+        label = langGet( "gpaint.screenshot" ),
         w = 220, h = 30,
-        clickFuncName = 'OnClickScreenshot',
+        clickFuncName = "OnClickScreenshot",
         paint = drawButton
     },
     {
-        label = langGet( 'gpaint.thickness' ),
+        label = langGet( "gpaint.thickness" ),
         w = 220, h = 60,
         max = 200,
 
@@ -73,7 +73,7 @@ local menuItems = {
             surface.DrawText( self.label )
 
             surface.SetTextPos( x + self.w - 55, y )
-            surface.DrawText( mn.parent.penThickness .. 'px' )
+            surface.DrawText( mn.parent.penThickness .. "px" )
         end,
 
         drag = function( self, mn, x, y )
@@ -84,7 +84,7 @@ local menuItems = {
         end
     },
     {
-        label = langGet( 'gpaint.color' ),
+        label = langGet( "gpaint.color" ),
         w = 220, h = 200,
 
         hue = 0,
@@ -190,7 +190,7 @@ function GPaint.CreateMenu( parent )
 
     setmetatable( mn, GPaintMenu )
 
-    mn.title = ''
+    mn.title = ""
     mn.animation = 0
 
     return mn
@@ -216,10 +216,10 @@ function GPaintMenu:Close()
 end
 
 function GPaintMenu:SetTitle( title )
-    self.title = title or '<unsaved image>'
+    self.title = title or "<unsaved image>"
 
     if string.len( self.title ) > 35 then
-        self.title = '...' .. string.Right( self.title, 32 )
+        self.title = "..." .. string.Right( self.title, 32 )
     end
 end
 
@@ -274,7 +274,7 @@ function GPaintMenu:Render( screenHeight )
     surface.DrawRect( x, y, w, screenHeight - 16 )
 
     surface.SetTextColor( 255, 255, 255, 255 )
-    surface.SetFont( 'Trebuchet18' )
+    surface.SetFont( "Trebuchet18" )
 
     ---- title
     local textWidth = surface.GetTextSize( self.title )
@@ -286,7 +286,7 @@ function GPaintMenu:Render( screenHeight )
     surface.DrawText( self.title )
 
     ---- menu items
-    surface.SetFont( 'Trebuchet24' )
+    surface.SetFont( "Trebuchet24" )
 
     x = x + 8
     y = y + 42
@@ -318,7 +318,7 @@ function GPaintMenu:Render( screenHeight )
 end
 
 function GPaintMenu:OnClickNew()
-    if self:UnsavedCheck( 'gpaint.new', self.OnClickNew ) then return end
+    if self:UnsavedCheck( "gpaint.new", self.OnClickNew ) then return end
 
     self.parent.relativeFilePath = nil
     self.parent:Clear( true )
@@ -332,13 +332,13 @@ function GPaintMenu:OnClickSave( forceNew )
 
         local dir = string.GetPathFromFilename( path )
 
-        if not file.Exists( dir, 'DATA' ) then
+        if not file.Exists( dir, "DATA" ) then
             file.CreateDir( dir )
         end
 
         file.Write( path, data )
 
-        if file.Exists( path, 'DATA' ) then
+        if file.Exists( path, "DATA" ) then
             if self then
                 self.parent.relativeFilePath = string.sub( path, 8 ) -- remove "gpaint/"
                 self.parent.isDirty = false
@@ -346,36 +346,36 @@ function GPaintMenu:OnClickSave( forceNew )
                 self:SetTitle( self.parent.relativeFilePath )
             end
 
-            notification.AddLegacy( string.format( langGet( 'gpaint.saved_to' ), path ), NOTIFY_GENERIC, 5 )
+            notification.AddLegacy( string.format( langGet( "gpaint.saved_to" ), path ), NOTIFY_GENERIC, 5 )
         else
-            notification.AddLegacy( langGet( 'gpaint.save_failed' ), NOTIFY_ERROR, 5 )
+            notification.AddLegacy( langGet( "gpaint.save_failed" ), NOTIFY_ERROR, 5 )
         end
     end
 
     local relativePath = self.parent.relativeFilePath
 
     if not relativePath or forceNew then
-        local now = os.date( '*t' )
-        relativePath = string.format( '%04i_%02i_%02i %02i-%02i-%02i', now.year, now.month, now.day, now.hour, now.min, now.sec )
+        local now = os.date( "*t" )
+        relativePath = string.format( "%04i_%02i_%02i %02i-%02i-%02i", now.year, now.month, now.day, now.hour, now.min, now.sec )
     end
 
-    local fullPath = 'gpaint/' .. relativePath
+    local fullPath = "gpaint/" .. relativePath
 
-    if file.Exists( fullPath, 'DATA' ) then
+    if file.Exists( fullPath, "DATA" ) then
         writeFile( fullPath )
     else
         Derma_StringRequest(
-            langGet( 'gpaint.save' ),
-            langGet( 'gpaint.enter_name' ),
+            langGet( "gpaint.save" ),
+            langGet( "gpaint.enter_name" ),
             relativePath,
             function( result )
                 relativePath = string.Trim( result )
 
                 if string.len( relativePath ) == 0 then
                     Derma_Message(
-                        langGet( 'gpaint.enter_name' ),
-                        langGet( 'gpaint.error' ),
-                        langGet( 'gpaint.ok' )
+                        langGet( "gpaint.enter_name" ),
+                        langGet( "gpaint.error" ),
+                        langGet( "gpaint.ok" )
                     )
 
                     return
@@ -383,11 +383,11 @@ function GPaintMenu:OnClickSave( forceNew )
 
                 local ext = string.Right( relativePath, 4 )
 
-                if ext ~= '.png' and ext ~= '.jpg' then
-                    relativePath = relativePath .. '.png'
+                if ext ~= ".png" and ext ~= ".jpg" then
+                    relativePath = relativePath .. ".png"
                 end
 
-                fullPath = 'gpaint/' .. relativePath
+                fullPath = "gpaint/" .. relativePath
 
                 writeFile( fullPath )
             end
@@ -400,7 +400,7 @@ function GPaintMenu:OnClickSaveAs()
 end
 
 function GPaintMenu:OnClickOpen()
-    if self:UnsavedCheck( 'gpaint.open', self.OnClickOpen ) then return end
+    if self:UnsavedCheck( "gpaint.open", self.OnClickOpen ) then return end
 
     GPaint.EnsureDataDir()
 
@@ -408,24 +408,24 @@ function GPaintMenu:OnClickOpen()
         self.browserFrame:Close()
     end
 
-    local frame = vgui.Create( 'DFrame' )
+    local frame = vgui.Create( "DFrame" )
     frame:SetSize( ScrW() * 0.8, ScrH() * 0.8 )
     frame:SetSizable( true )
     frame:SetDraggable( true )
     frame:Center()
     frame:MakePopup()
-    frame:SetTitle( langGet( 'gpaint.open' ) )
-    frame:SetIcon( 'materials/icon16/image.png' )
+    frame:SetTitle( langGet( "gpaint.open" ) )
+    frame:SetIcon( "materials/icon16/image.png" )
     frame:SetDeleteOnClose( true )
 
     self.browserFrame = frame
 
-    local browser = vgui.Create( 'DFileBrowser', frame )
+    local browser = vgui.Create( "DFileBrowser", frame )
     browser:Dock( FILL )
     browser:SetModels( true )
-    browser:SetPath( 'GAME' )
-    browser:SetBaseFolder( 'data/gpaint' )
-    browser:SetCurrentFolder( '' )
+    browser:SetPath( "GAME" )
+    browser:SetBaseFolder( "data/gpaint" )
+    browser:SetCurrentFolder( "" )
     browser:SetOpen( true )
     browser.thumbnailQueue = {}
 
@@ -441,17 +441,17 @@ function GPaintMenu:OnClickOpen()
         local menu = DermaMenu()
 
         menu:AddOption(
-            langGet( 'gpaint.delete' ),
+            langGet( "gpaint.delete" ),
             function()
                 Derma_Query(
-                    langGet( 'gpaint.delete_query' ) .. '\n' .. path,
-                    langGet( 'gpaint.delete' ),
-                    langGet( 'gpaint.yes' ),
+                    langGet( "gpaint.delete_query" ) .. "\n" .. path,
+                    langGet( "gpaint.delete" ),
+                    langGet( "gpaint.yes" ),
                     function()
                         file.Delete( string.sub( path, 6 ) )
                         s:SetCurrentFolder( string.GetPathFromFilename( path ) )
                     end,
-                    langGet( 'gpaint.no' )
+                    langGet( "gpaint.no" )
                 )
             end
         )
@@ -469,40 +469,40 @@ function GPaintMenu:OnClickOpen()
         if not path then return end
 
         local filters = {
-            '*.png',
-            '*.jpg'
+            "*.png",
+            "*.jpg"
         }
 
         for _, filter in pairs( filters ) do
-            local files = file.Find( string.Trim( path .. '/' .. filter, '/' ), s.m_strPath )
+            local files = file.Find( string.Trim( path .. "/" .. filter, "/" ), s.m_strPath )
             if not istable( files ) then continue end
 
             for _, v in pairs( files ) do
-                local icon = s.Files:Add( 'DImageButton' )
+                local icon = s.Files:Add( "DImageButton" )
                 icon:SetSize( 180, 180 )
                 icon:SetKeepAspect( true )
 
                 -- add this icon panel and path to the thumbnail queue
                 s.thumbnailQueue[#s.thumbnailQueue + 1] = {
-                    icon, string.format( '../%s/%s', path, v )
+                    icon, string.format( "../%s/%s", path, v )
                 }
 
                 icon.PaintOver = function( _, selfW )
                     surface.SetDrawColor( 0, 0, 0, 200 )
                     surface.DrawRect( 0, 0, selfW, 20 )
 
-                    surface.SetFont( 'Trebuchet18' )
+                    surface.SetFont( "Trebuchet18" )
                     surface.SetTextPos( 4, 2 )
                     surface.SetTextColor( 255, 255, 255, 255 )
                     surface.DrawText( v )
                 end
 
                 icon.DoClick = function()
-                    s.OnSelect( s, path .. '/' .. v, icon )
+                    s.OnSelect( s, path .. "/" .. v, icon )
                 end
 
                 icon.DoRightClick = function()
-                    s.OnRightClick( s, path .. '/' .. v, icon )
+                    s.OnRightClick( s, path .. "/" .. v, icon )
                 end
             end
         end
@@ -518,33 +518,33 @@ function GPaintMenu:OnClickOpen()
 
         panel:SetImage( path )
 
-        local tex = panel.m_Image.m_Material:GetTexture( '$basetexture' )
+        local tex = panel.m_Image.m_Material:GetTexture( "$basetexture" )
         if IsValid( tex ) then tex:Download() end
     end
 end
 
 function GPaintMenu:OnClickScreenshot()
-    if self:UnsavedCheck( 'gpaint.screenshot', self.OnClickScreenshot ) then return end
+    if self:UnsavedCheck( "gpaint.screenshot", self.OnClickScreenshot ) then return end
 
     GPaint.TakeScreenshot( function( path )
         self.parent.relativeFilePath = nil
         self.parent.isDirty = true
-        self.parent:RenderImageFile( 'data/' .. path, true )
+        self.parent:RenderImageFile( "data/" .. path, true )
     end )
 end
 
--- if we have unsaved stuff, display a dialog to confirm the user's intent
+-- if we have unsaved stuff, display a dialog to confirm the user"s intent
 function GPaintMenu:UnsavedCheck( title, callback )
     if self.parent.isDirty then
         Derma_Query(
-            langGet( 'gpaint.unsaved_changes' ),
+            langGet( "gpaint.unsaved_changes" ),
             langGet( title ),
-            langGet( 'gpaint.yes' ),
+            langGet( "gpaint.yes" ),
             function()
                 self.parent.isDirty = false
                 callback( self )
             end,
-            langGet( 'gpaint.no' )
+            langGet( "gpaint.no" )
         )
 
         return true

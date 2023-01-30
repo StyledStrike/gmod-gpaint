@@ -20,7 +20,7 @@ local network = {
 }
 
 function network.StartCommand( id, entity )
-    net.Start( 'gpaint.command', false )
+    net.Start( "gpaint.command", false )
     net.WriteEntity( entity )
     net.WriteUInt( id, network.COMMAND_SIZE )
 end
@@ -90,7 +90,7 @@ end
 
 -- theres no guarantee gm_express will load before GPaint so,
 -- InitPostEntity to the rescue...
-hook.Add( 'InitPostEntity', 'GPaint_CheckExpressAvailability', function()
+hook.Add( "InitPostEntity", "GPaint_CheckExpressAvailability", function()
     if not game.SinglePlayer() and express then
         network.USE_EXPRESS = true
         network.OnExpressLoad()

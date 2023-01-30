@@ -1,11 +1,11 @@
-resource.AddWorkshop( '2697023796' )
-util.AddNetworkString( 'gpaint.command' )
+resource.AddWorkshop( "2697023796" )
+util.AddNetworkString( "gpaint.command" )
 
 CreateConVar(
-    'sbox_maxgpaint_boards',
-    '3',
+    "sbox_maxgpaint_boards",
+    "3",
     bit.bor( FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_REPLICATED ),
-    'Maximum GPaint screens a player can create',
+    "Maximum GPaint screens a player can create",
     0
 )
 
@@ -14,20 +14,20 @@ local gnet = GPaint.network
 
 local function IsGPaintScreen( ent )
     return IsValid( ent ) and (
-        ent:GetClass() == 'ent_gpaint_base' or
-        ent.Base == 'ent_gpaint_base'
+        ent:GetClass() == "ent_gpaint_base" or
+        ent.Base == "ent_gpaint_base"
     )
 end
 
 local function IsValidData( data, fromSteamId )
     if not data then
-        GPaint.LogF( 'Missing data from %s', fromSteamId )
+        GPaint.LogF( "Missing data from %s", fromSteamId )
 
         return false
     end
 
     if #data > gnet.MAX_DATA_SIZE then
-        GPaint.LogF( 'Ignoring data from %s (too big)', fromSteamId )
+        GPaint.LogF( "Ignoring data from %s (too big)", fromSteamId )
 
         return false
     end
@@ -61,7 +61,7 @@ local function AddRequest( ply, ent )
 
     ent.requests[requestId] = ply
 
-    GPaint.LogF( '%s requested screen data', ply:Name() )
+    GPaint.LogF( "%s requested screen data", ply:Name() )
 end
 
 local function CancelRequests( ply, ent )
@@ -75,7 +75,7 @@ local function CancelRequests( ply, ent )
             net.WriteBool( false )
             net.Send( ply )
 
-            GPaint.LogF( '%s cancelled their screen data request #%d', ply:Name(), id )
+            GPaint.LogF( "%s cancelled their screen data request #%d", ply:Name(), id )
         end
     end
 end
@@ -101,7 +101,7 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
         net.Send( targetPly )
 
         express.Send(
-            'gpaint.transfer',
+            "gpaint.transfer",
             {
                 ent = ent,
                 image = data
@@ -267,7 +267,7 @@ local netCommands = {
     end
 }
 
-net.Receive( 'gpaint.command', function( _, ply )
+net.Receive( "gpaint.command", function( _, ply )
     local ent = net.ReadEntity()
     if not IsGPaintScreen( ent ) then return end
 
@@ -279,10 +279,10 @@ net.Receive( 'gpaint.command', function( _, ply )
 end )
 
 gnet.OnExpressLoad = function()
-    GPaint.LogF( 'Now we\'re using gm_express!' )
+    GPaint.LogF( "Now we\"re using gm_express!" )
 
-    express.Receive( 'gpaint.transfer', function( ply, data )
-        if type( data ) ~= 'table' then return end
+    express.Receive( "gpaint.transfer", function( ply, data )
+        if type( data ) ~= "table" then return end
 
         local steamId = ply:SteamID()
         local id = data.requestId
@@ -308,7 +308,7 @@ gnet.OnExpressLoad = function()
             net.Send( subs )
 
             express.Send(
-                'gpaint.transfer',
+                "gpaint.transfer",
                 {
                     ent = ent,
                     image = data.image

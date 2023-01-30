@@ -1,10 +1,10 @@
 function GPaint.EnsureDataDir()
-    if not file.Exists( 'gpaint/', 'DATA' ) then
-        file.CreateDir( 'gpaint/' )
+    if not file.Exists( "gpaint/", "DATA" ) then
+        file.CreateDir( "gpaint/" )
     end
 
-    if not file.Exists( 'gpaint/.temp/', 'DATA' ) then
-        file.CreateDir( 'gpaint/.temp/' )
+    if not file.Exists( "gpaint/.temp/", "DATA" ) then
+        file.CreateDir( "gpaint/.temp/" )
     end
 end
 
@@ -18,7 +18,7 @@ function GPaint.AllocateRT()
         if rt.isFree then
             rt.isFree = false
 
-            GPaint.LogF( 'RT #%d was recycled', idx )
+            GPaint.LogF( "RT #%d was recycled", idx )
             return idx, rt.texture
         end
     end
@@ -40,7 +40,7 @@ function GPaint.AllocateRT()
     rtCache[idx] = rt
 
     rt.texture = GetRenderTargetEx(
-        'gpaint_rt_' .. idx,
+        "gpaint_rt_" .. idx,
         size, size,
         RT_SIZE_OFFSCREEN,
         MATERIAL_RT_DEPTH_NONE,
@@ -48,7 +48,7 @@ function GPaint.AllocateRT()
         IMAGE_FORMAT_BGRA8888
     )
 
-    GPaint.LogF( 'RT #%d was created.', idx )
+    GPaint.LogF( "RT #%d was created.", idx )
 
     return idx, rt.texture
 end
@@ -57,29 +57,29 @@ function GPaint.FreeRT( idx )
     local rt = rtCache[idx]
 
     if not rt then
-        GPaint.LogF( 'Tried to free inexistent render target #%d', idx )
+        GPaint.LogF( "Tried to free inexistent render target #%d", idx )
 
         return
     end
 
     rt.isFree = true
-    GPaint.LogF( 'RT #%d is ready for reuse.', idx )
+    GPaint.LogF( "RT #%d is ready for reuse.", idx )
 end
 
 local renderCapture = render.Capture
 
 function GPaint.TakeScreenshot( callback )
-    local msg = language.GetPhrase( 'gpaint.screenshot_hint' )
+    local msg = language.GetPhrase( "gpaint.screenshot_hint" )
 
-    hook.Add( 'PostRender', 'GPaint_TakeScreenshot', function()
+    hook.Add( "PostRender", "GPaint_TakeScreenshot", function()
         if gui.IsGameUIVisible() then
-            hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
+            hook.Remove( "PostRender", "GPaint_TakeScreenshot" )
 
         elseif input.IsKeyDown( KEY_E ) then
-            hook.Remove( 'PostRender', 'GPaint_TakeScreenshot' )
+            hook.Remove( "PostRender", "GPaint_TakeScreenshot" )
 
             local data = renderCapture{
-                format = 'png',
+                format = "png",
                 alpha = false,
                 x = 0, y = 0,
                 w = ScrW(),
@@ -88,13 +88,13 @@ function GPaint.TakeScreenshot( callback )
 
             GPaint.EnsureDataDir()
 
-            local path = 'gpaint/.temp/screenshot.png'
+            local path = "gpaint/.temp/screenshot.png"
             file.Write( path, data )
             callback( path )
         end
 
         cam.Start2D()
-        surface.SetFont( 'CloseCaption_Bold' )
+        surface.SetFont( "CloseCaption_Bold" )
 
         surface.SetDrawColor( 255, 0, 0, 200 )
         surface.DrawOutlinedRect( 0, 0, ScrW(), ScrH(), 8 )
@@ -125,7 +125,7 @@ end
 ]]
 
 local function getMaxRenderDistanceSqr()
-    local cvarRenderDistance = GetConVar( 'gpaint_max_render_distance' )
+    local cvarRenderDistance = GetConVar( "gpaint_max_render_distance" )
     local value = cvarRenderDistance and cvarRenderDistance:GetFloat() or 3000
 
     return value * value
@@ -135,7 +135,7 @@ local IsValid = IsValid
 local focusPreventionDelay = 0
 local focusedIndex
 
-hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
+hook.Add( "PreDrawHUD", "GPaint_DrawScreens", function()
     focusedIndex = nil
 
     local screens = GPaint.screens
@@ -231,22 +231,22 @@ hook.Add( 'PreDrawHUD', 'GPaint_DrawScreens', function()
 end )
 
 -- block interaction with the screens if we hold stuff with the physgun
-hook.Add( 'PhysgunPickup', 'GPaint_PreventFocusing', function( ply )
+hook.Add( "PhysgunPickup", "GPaint_PreventFocusing", function( ply )
     if ply == LocalPlayer() then focusPreventionDelay = RealTime() + 999 end
 end )
 
-hook.Add( 'PhysgunDrop', 'GPaint_AllowFocusing', function( ply )
+hook.Add( "PhysgunDrop", "GPaint_AllowFocusing", function( ply )
     if ply == LocalPlayer() then focusPreventionDelay = RealTime() + 0.7 end
 end )
 
 -- blocks some binds when focusing on any screen
 local block_binds = {
-    ['+attack'] = true,
-    ['+attack2'] = true,
-    ['+reload'] = true
+    ["+attack"] = true,
+    ["+attack2"] = true,
+    ["+reload"] = true
 }
 
-hook.Add( 'PlayerBindPress', 'GPaint_BlockBindsWhenFocused', function( _, bind )
+hook.Add( "PlayerBindPress", "GPaint_BlockBindsWhenFocused", function( _, bind )
     if block_binds[bind] and focusedIndex then return true end
 end )
 
@@ -259,10 +259,10 @@ end
 local function RenderImageData( scr, data )
     GPaint.EnsureDataDir()
 
-    local path = 'gpaint/.temp/net.png'
+    local path = "gpaint/.temp/net.png"
     file.Write( path, data )
 
-    scr:RenderImageFile( 'data/' .. path )
+    scr:RenderImageFile( "data/" .. path )
     scr.menu:SetTitle()
     scr.relativeFilePath = nil
     scr.isDirty = false
@@ -271,7 +271,7 @@ end
 
 local gnet = GPaint.network
 
-net.Receive( 'gpaint.command', function()
+net.Receive( "gpaint.command", function()
     local ent = net.ReadEntity()
     if not IsValid( ent ) then return end
 
@@ -316,11 +316,11 @@ net.Receive( 'gpaint.command', function()
             return
         end
 
-        local data = scr:CaptureRT( 'jpg' )
+        local data = scr:CaptureRT( "jpg" )
 
         if gnet.USE_EXPRESS then
             express.Send(
-                'gpaint.transfer',
+                "gpaint.transfer",
                 {
                     requestId = requestId,
                     ent = scr.entity,
@@ -345,9 +345,9 @@ net.Receive( 'gpaint.command', function()
 end )
 
 gnet.OnExpressLoad = function()
-    GPaint.LogF( 'Now we\'re using gm_express!' )
+    GPaint.LogF( "Now we\"re using gm_express!" )
 
-    express.Receive( 'gpaint.transfer', function( data )
+    express.Receive( "gpaint.transfer", function( data )
         local ent = data.ent
         if not IsValid( ent ) then return end
 

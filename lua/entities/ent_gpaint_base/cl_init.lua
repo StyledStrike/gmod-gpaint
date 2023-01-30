@@ -1,10 +1,10 @@
-include( 'shared.lua' )
+include( "shared.lua" )
 
-ENT.IconOverride = 'materials/entities/ent_gpaint_base.png'
+ENT.IconOverride = "materials/entities/ent_gpaint_base.png"
 ENT.RenderGroup = RENDERGROUP_OPAQUE
 
 list.Set(
-    'GPaintScreenOffsets',
+    "GPaintScreenOffsets",
     ENT.model,
     {
         pos = Vector( -47.4, 71.1, -1.65 ),
@@ -16,7 +16,7 @@ list.Set(
 function ENT:Initialize()
     self:DrawShadow( false )
 
-    local offsets = list.Get( 'GPaintScreenOffsets' )
+    local offsets = list.Get( "GPaintScreenOffsets" )
 
     self.screenOffset = offsets[self:GetModel()] or {
         pos = Vector( 0, 0, 0 ),
@@ -38,7 +38,7 @@ function ENT:Think()
     self.finalMatrix = self:GetWorldTransformMatrix() * self.offsetMatrix
 end
 
-function ENT:GetCursorPos(ply)
+function ENT:GetCursorPos( ply )
     local offset = self.screenOffset
 
     local pos = self:LocalToWorld( offset.pos )

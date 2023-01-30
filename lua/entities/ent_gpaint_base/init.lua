@@ -1,12 +1,12 @@
-AddCSLuaFile( 'cl_init.lua' )
-AddCSLuaFile( 'shared.lua' )
-include( 'shared.lua' )
+AddCSLuaFile( "cl_init.lua" )
+AddCSLuaFile( "shared.lua" )
+include( "shared.lua" )
 
 ENT.spawnAngleOffset = Angle( 0, 0, 0 )
 
 function ENT:SpawnFunction( ply, tr )
     if not tr.Hit then return end
-    if not ply:CheckLimit( 'gpaint_boards' ) then return end
+    if not ply:CheckLimit( "gpaint_boards" ) then return end
 
     local ent = ents.Create( self.ClassName )
     ent:SetPos( tr.HitPos )
@@ -14,7 +14,7 @@ function ENT:SpawnFunction( ply, tr )
     ent:Spawn()
     ent:Activate()
 
-    ply:AddCount( 'gpaint_boards', ent )
+    ply:AddCount( "gpaint_boards", ent )
 
     return ent
 end
