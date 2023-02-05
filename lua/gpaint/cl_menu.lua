@@ -553,6 +553,12 @@ function GPaintMenu:OnClickScreenshot()
 end
 
 function GPaintMenu:OnClickShare()
+    if self.parent.entity:GetGPaintOwner() ~= LocalPlayer() then
+        Derma_Message( "#gpaint.feature_blocked", "#gpaint.share_screen", "#gpaint.ok" )
+
+        return
+    end
+
     if IsValid( self.shareFrame ) then
         self.shareFrame:Close()
     end
