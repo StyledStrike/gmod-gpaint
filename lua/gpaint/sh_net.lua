@@ -6,9 +6,10 @@ local network = {
     MAX_STROKES = 15,
 
     -- used in net.WriteUInt when sending commands
-    COMMAND_SIZE = 3,
+    COMMAND_SIZE = 4,
 
     -- command IDs
+    -- (note: max. ID when COMMAND_SIZE == 4 is 15)
     SUBSCRIBE = 0,
     UNSUBSCRIBE = 1,
     CLEAR = 2,
@@ -16,7 +17,8 @@ local network = {
     SEND_DATA = 4,
     BROADCAST_DATA = 5,
     REQUEST_DATA = 6,
-    AWAIT_DATA = 7 -- max. value when COMMAND_SIZE == 3
+    AWAIT_DATA = 7,
+    ON_INIT = 8
 }
 
 function network.StartCommand( id, entity )

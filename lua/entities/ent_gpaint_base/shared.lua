@@ -17,13 +17,15 @@ ENT.model = "models/hunter/plates/plate2x3.mdl"
 function ENT:CanPlayerDraw( ply )
     if game.SinglePlayer() then return true end
 
-    if CPPI then
-        if ply == self:CPPIGetOwner() then return true end
-    else
+    if ply == self:GetGPaintOwner() then
         return true
     end
 
     return false
+end
+
+function ENT:SetupDataTables()
+    self:NetworkVar( "Entity", 0, "GPaintOwner" )
 end
 
 properties.Add( "gpaint.turnoff", {
@@ -34,8 +36,8 @@ properties.Add( "gpaint.turnoff", {
     Filter = function( _, ent, ply )
         if
             GPaint.IsGPaintScreen( ent ) and
-            gamemode.Call( "CanProperty", ply, "gpaint.turnoff", ent )
-            -- test if ply ~= creator
+            gamemode.Call( "CanProperty", ply, "gpaint.turnoff", ent ) and
+            ply ~= ent:GetGPaintOwner()
         then
             return true
         end

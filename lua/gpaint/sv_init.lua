@@ -159,6 +159,17 @@ end
 local streams = {}
 
 local netCommands = {
+    [gnet.ON_INIT] = function( ply, ent )
+        if ent:GetCreator() == ply then
+            -- set the screen owner
+            ent:SetGPaintOwner( ply )
+
+            -- tell the screen owner to subscribe right away
+            gnet.StartCommand( gnet.SUBSCRIBE, ent )
+            net.Send( ply )
+        end
+    end,
+
     [gnet.SUBSCRIBE] = function( ply, ent )
         if not CanPlayerSubscribe( ply, ent ) then return end
 
