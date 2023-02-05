@@ -341,6 +341,9 @@ net.Receive( "gpaint.command", function()
         -- server wants us to subscribe right away
         scr.wantsToSubscribe = true
 
+    elseif cmd == gnet.UPDATE_WHITELIST then
+        gnet.ReadWhitelist( ent.GPaintWhitelist )
+
     end
 end )
 

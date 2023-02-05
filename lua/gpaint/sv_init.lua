@@ -159,6 +159,16 @@ end
 local streams = {}
 
 local netCommands = {
+    [gnet.UPDATE_WHITELIST] = function( ply, ent )
+        if ply ~= ent:GetGPaintOwner() then return end
+
+        gnet.ReadWhitelist( ent.GPaintWhitelist )
+
+        gnet.StartCommand( gnet.UPDATE_WHITELIST, ent )
+        gnet.WriteWhitelist( ent.GPaintWhitelist )
+        net.Broadcast()
+    end,
+
     [gnet.ON_INIT] = function( ply, ent )
         if ent:GetCreator() == ply then
             -- set the screen owner

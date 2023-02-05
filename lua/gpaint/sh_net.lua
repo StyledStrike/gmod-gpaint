@@ -18,7 +18,8 @@ local network = {
     BROADCAST_DATA = 5,
     REQUEST_DATA = 6,
     AWAIT_DATA = 7,
-    ON_INIT = 8
+    ON_INIT = 8,
+    UPDATE_WHITELIST = 9
 }
 
 function network.StartCommand( id, entity )
@@ -88,6 +89,35 @@ end
 
 function network.ReadImage( ply, callback )
     return net.ReadStream( ply, callback )
+end
+
+function network.WriteWhitelist( whitelist )
+    -- "whitelist" is a dictionary, convert to a array
+    local data = {}
+
+    for id, _ in pairs( whitelist ) do
+        data[#data + 1] = id
+    end
+
+    data = util.Compress( util.TableToJSON( data ) )
+
+    net.WriteUInt( #data, 16 )
+    net.WriteData( data, #data )
+end
+
+function network.ReadWhitelist( outTable )
+    local len = net.ReadUInt( 16 )
+    local data = net.ReadData( len )
+
+    data = util.JSONToTable( util.Decompress( data ) )
+    if not data then return end
+
+    table.Empty( outTable )
+
+    -- "data" is a array, convert to a dictionary
+    for _, id in ipairs( data ) do
+        outTable[id] = true
+    end
 end
 
 -- theres no guarantee gm_express will load before GPaint so,

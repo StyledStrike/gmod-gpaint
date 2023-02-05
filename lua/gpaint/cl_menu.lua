@@ -63,6 +63,13 @@ local menuItems = {
         paint = drawButton
     },
     {
+        id = "share",
+        label = langGet( "gpaint.share_screen" ),
+        w = 220, h = 30,
+        clickFuncName = "OnClickShare",
+        paint = drawButton
+    },
+    {
         id = "thickness",
         label = langGet( "gpaint.thickness" ),
         w = 220, h = 60,
@@ -216,6 +223,10 @@ end
 function GPaintMenu:Cleanup()
     if IsValid( self.browserFrame ) then
         self.browserFrame:Close()
+    end
+
+    if IsValid( self.shareFrame ) then
+        self.shareFrame:Close()
     end
 end
 
@@ -544,6 +555,102 @@ function GPaintMenu:OnClickScreenshot()
         self.parent.isDirty = true
         self.parent:RenderImageFile( "data/" .. path, true )
     end )
+end
+
+function GPaintMenu:OnClickShare()
+    if IsValid( self.shareFrame ) then
+        self.shareFrame:Close()
+    end
+
+    local frame = vgui.Create( "DFrame" )
+    frame:SetSize( 400, 300 )
+    frame:SetSizable( true )
+    frame:SetDraggable( true )
+    frame:Center()
+    frame:MakePopup()
+    frame:SetTitle( langGet( "gpaint.share_hint" ) )
+    frame:SetIcon( "materials/icon16/group.png" )
+    frame:SetDeleteOnClose( true )
+
+    self.shareFrame = frame
+
+    local whitelist = table.Copy( self.parent.entity.GPaintWhitelist )
+    local updateLists
+
+    ------ players list ------
+
+    local playersList = vgui.Create( "DListView", frame )
+    playersList:SetMultiSelect( false )
+    playersList:AddColumn( "#gpaint.all_players" )
+
+    playersList.OnRowSelected = function( _, _, pnl )
+        whitelist[pnl._playerID] = true
+        updateLists()
+    end
+
+    ------ whitelisted players ------
+
+    local sharedList = vgui.Create( "DListView", frame )
+    sharedList:SetMultiSelect( false )
+    sharedList:AddColumn( "#gpaint.shared_with" )
+
+    sharedList.OnRowSelected = function( _, _, pnl )
+        whitelist[pnl._playerID] = nil
+        updateLists()
+    end
+
+    ------ divider & function to update lists ------
+
+    local div = vgui.Create( "DHorizontalDivider", frame )
+    div:Dock( FILL )
+    div:SetLeft( playersList )
+    div:SetRight( sharedList )
+    div:SetDividerWidth( 4 )
+    div:SetLeftMin( 100 )
+    div:SetRightMin( 100 )
+    div:SetLeftWidth( 200 )
+
+    updateLists = function()
+        playersList:Clear()
+        sharedList:Clear()
+
+        local players = player.GetHumans()
+
+        table.sort( players, function( a, b )
+            return a:Nick() > b:Nick()
+        end )
+
+        for _, ply in ipairs( players ) do
+            local nick, id = ply:Nick(), ply:SteamID()
+
+            if whitelist[id] then
+                local pnl = sharedList:AddLine( nick )
+                pnl._playerID = id
+            else
+                local pnl = playersList:AddLine( nick )
+                pnl._playerID = id
+            end
+        end
+    end
+
+    updateLists()
+
+    ------ "apply" button ------
+
+    local buttonApply = vgui.Create( "DButton", frame )
+    buttonApply:SetText( "#gpaint.apply" )
+    buttonApply:Dock( BOTTOM )
+    buttonApply:DockMargin( 0, 4, 0, 0 )
+
+    buttonApply.DoClick = function()
+        local gnet = GPaint.network
+
+        gnet.StartCommand( gnet.UPDATE_WHITELIST, self.parent.entity )
+        gnet.WriteWhitelist( whitelist )
+        net.SendToServer()
+
+        frame:Close()
+    end
 end
 
 -- if we have unsaved stuff, display a dialog to confirm the user"s intent

@@ -21,11 +21,16 @@ function ENT:CanPlayerDraw( ply )
         return true
     end
 
+    if self.GPaintWhitelist[ply:SteamID()] then
+        return true
+    end
+
     return false
 end
 
 function ENT:SetupDataTables()
     self:NetworkVar( "Entity", 0, "GPaintOwner" )
+    self.GPaintWhitelist = {}
 end
 
 properties.Add( "gpaint.turnoff", {
