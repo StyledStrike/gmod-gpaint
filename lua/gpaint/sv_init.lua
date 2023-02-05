@@ -11,13 +11,7 @@ CreateConVar(
 
 local IsValid = IsValid
 local gnet = GPaint.network
-
-local function IsGPaintScreen( ent )
-    return IsValid( ent ) and (
-        ent:GetClass() == "ent_gpaint_base" or
-        ent.Base == "ent_gpaint_base"
-    )
-end
+local IsGPaintScreen = GPaint.IsGPaintScreen
 
 local function IsValidData( data, fromSteamId )
     if not data then

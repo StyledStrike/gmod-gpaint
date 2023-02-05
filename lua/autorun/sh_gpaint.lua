@@ -14,6 +14,13 @@ function GPaint.LogF( str, ... )
     MsgC( Color( 182, 0, 206 ), "[GPaint] ", color_white, string.format( str, ... ), "\n" )
 end
 
+function GPaint.IsGPaintScreen( ent )
+    return IsValid( ent ) and (
+        ent:GetClass() == "ent_gpaint_base" or
+        ent.Base == "ent_gpaint_base"
+    )
+end
+
 if SERVER then
     include( "gpaint/sh_net.lua" )
     include( "gpaint/sv_init.lua" )

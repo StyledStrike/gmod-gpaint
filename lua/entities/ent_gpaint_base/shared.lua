@@ -25,3 +25,31 @@ function ENT:CanPlayerDraw( ply )
 
     return false
 end
+
+properties.Add( "gpaint.turnoff", {
+    MenuLabel = "#gpaint.turnoff",
+    Order = 999,
+    MenuIcon = "icon16/bullet_red.png",
+
+    Filter = function( _, ent, ply )
+        if
+            GPaint.IsGPaintScreen( ent ) and
+            gamemode.Call( "CanProperty", ply, "gpaint.turnoff", ent )
+            -- test if ply ~= creator
+        then
+            return true
+        end
+
+        return false
+    end,
+
+    Action = function( _, ent )
+        for _, scr in pairs( GPaint.screens ) do
+            if scr.entity == ent then
+                scr.wantsToSubscribe = false
+                scr:Clear()
+                scr:OnHide()
+            end
+        end
+    end
+} )
