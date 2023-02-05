@@ -342,7 +342,7 @@ function GPaintMenu:Render( screenHeight )
 end
 
 function GPaintMenu:OnClickNew()
-    if self:UnsavedCheck( "gpaint.new", self.OnClickNew ) then return end
+    if self:UnsavedCheck( "#gpaint.new", self.OnClickNew ) then return end
 
     self.parent.relativeFilePath = nil
     self.parent:Clear( true )
@@ -389,18 +389,14 @@ function GPaintMenu:OnClickSave( forceNew )
         writeFile( fullPath )
     else
         Derma_StringRequest(
-            langGet( "gpaint.save" ),
-            langGet( "gpaint.enter_name" ),
+            "#gpaint.save",
+            "#gpaint.enter_name",
             relativePath,
             function( result )
                 relativePath = string.Trim( result )
 
                 if string.len( relativePath ) == 0 then
-                    Derma_Message(
-                        langGet( "gpaint.enter_name" ),
-                        langGet( "gpaint.error" ),
-                        langGet( "gpaint.ok" )
-                    )
+                    Derma_Message( "#gpaint.enter_name", "#gpaint.error", "#gpaint.ok" )
 
                     return
                 end
@@ -424,7 +420,7 @@ function GPaintMenu:OnClickSaveAs()
 end
 
 function GPaintMenu:OnClickOpen()
-    if self:UnsavedCheck( "gpaint.open", self.OnClickOpen ) then return end
+    if self:UnsavedCheck( "#gpaint.open", self.OnClickOpen ) then return end
 
     GPaint.EnsureDataDir()
 
@@ -438,7 +434,7 @@ function GPaintMenu:OnClickOpen()
     frame:SetDraggable( true )
     frame:Center()
     frame:MakePopup()
-    frame:SetTitle( langGet( "gpaint.open" ) )
+    frame:SetTitle( "#gpaint.open" )
     frame:SetIcon( "materials/icon16/image.png" )
     frame:SetDeleteOnClose( true )
 
@@ -465,17 +461,16 @@ function GPaintMenu:OnClickOpen()
         local menu = DermaMenu()
 
         menu:AddOption(
-            langGet( "gpaint.delete" ),
+            "#gpaint.delete",
             function()
                 Derma_Query(
                     langGet( "gpaint.delete_query" ) .. "\n" .. path,
-                    langGet( "gpaint.delete" ),
-                    langGet( "gpaint.yes" ),
+                    "#gpaint.delete", "#gpaint.yes",
                     function()
                         file.Delete( string.sub( path, 6 ) )
                         s:SetCurrentFolder( string.GetPathFromFilename( path ) )
                     end,
-                    langGet( "gpaint.no" )
+                    "#gpaint.no"
                 )
             end
         )
@@ -548,7 +543,7 @@ function GPaintMenu:OnClickOpen()
 end
 
 function GPaintMenu:OnClickScreenshot()
-    if self:UnsavedCheck( "gpaint.screenshot", self.OnClickScreenshot ) then return end
+    if self:UnsavedCheck( "#gpaint.screenshot", self.OnClickScreenshot ) then return end
 
     GPaint.TakeScreenshot( function( path )
         self.parent.relativeFilePath = nil
@@ -568,7 +563,7 @@ function GPaintMenu:OnClickShare()
     frame:SetDraggable( true )
     frame:Center()
     frame:MakePopup()
-    frame:SetTitle( langGet( "gpaint.share_hint" ) )
+    frame:SetTitle( "#gpaint.share_hint" )
     frame:SetIcon( "materials/icon16/group.png" )
     frame:SetDeleteOnClose( true )
 
@@ -657,14 +652,12 @@ end
 function GPaintMenu:UnsavedCheck( title, callback )
     if self.parent.isDirty then
         Derma_Query(
-            langGet( "gpaint.unsaved_changes" ),
-            langGet( title ),
-            langGet( "gpaint.yes" ),
+            "#gpaint.unsaved_changes", title, "#gpaint.yes",
             function()
                 self.parent.isDirty = false
                 callback( self )
             end,
-            langGet( "gpaint.no" )
+            "#gpaint.no"
         )
 
         return true
