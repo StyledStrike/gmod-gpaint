@@ -28,36 +28,42 @@ end
 
 local menuItems = {
     {
+        id = "new",
         label = langGet( "gpaint.new" ),
         w = 220, h = 30,
         clickFuncName = "OnClickNew",
         paint = drawButton
     },
     {
+        id = "save",
         label = langGet( "gpaint.save" ),
         w = 220, h = 30,
         clickFuncName = "OnClickSave",
         paint = drawButton
     },
     {
+        id = "saveas",
         label = langGet( "gpaint.saveas" ),
         w = 220, h = 30,
         clickFuncName = "OnClickSaveAs",
         paint = drawButton
     },
     {
+        id = "open",
         label = langGet( "gpaint.open" ),
         w = 220, h = 30,
         clickFuncName = "OnClickOpen",
         paint = drawButton
     },
     {
+        id = "screenshot",
         label = langGet( "gpaint.screenshot" ),
         w = 220, h = 30,
         clickFuncName = "OnClickScreenshot",
         paint = drawButton
     },
     {
+        id = "thickness",
         label = langGet( "gpaint.thickness" ),
         w = 220, h = 60,
         max = 200,
@@ -84,6 +90,7 @@ local menuItems = {
         end
     },
     {
+        id = "color",
         label = langGet( "gpaint.color" ),
         w = 220, h = 200,
 
@@ -175,6 +182,12 @@ local menuItems = {
     }
 }
 
+local function GetItemByID( id )
+    for _, item in ipairs( menuItems ) do
+        if item.id == id then return item end
+    end
+end
+
 --[[
     This is a sort-of class to handle the "menu"
     you see in-game for each GPaint screen.
@@ -231,7 +244,7 @@ function GPaintMenu:SetColor( color )
     local h, s, v = ColorToHSV( color )
 
     -- update the color picker
-    local item = menuItems[7]
+    local item = GetItemByID( "color" )
 
     item.base = HSVToColor( h, 1, 1 )
     item.hue = 1 - ( h / 360 )
@@ -291,11 +304,11 @@ function GPaintMenu:Render( screenHeight )
     x = x + 8
     y = y + 42
 
-    local c_x, c_y = self.parent.cursorX, self.parent.cursorY
+    local cX, cY = self.parent.cursorX, self.parent.cursorY
     local selection
 
     for index, item in ipairs( menuItems ) do
-        local hover = isWithinBox( c_x, c_y, x, y, item.w, item.h )
+        local hover = isWithinBox( cX, cY, x, y, item.w, item.h )
         if hover then
             selection = {
                 index = index,
