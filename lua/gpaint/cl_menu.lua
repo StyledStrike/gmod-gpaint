@@ -610,6 +610,7 @@ function GPaintMenu:OnClickShare()
         sharedList:Clear()
 
         local players = player.GetHumans()
+        local localId = LocalPlayer():SteamID()
 
         table.sort( players, function( a, b )
             return a:Nick() > b:Nick()
@@ -618,12 +619,14 @@ function GPaintMenu:OnClickShare()
         for _, ply in ipairs( players ) do
             local nick, id = ply:Nick(), ply:SteamID()
 
-            if whitelist[id] then
-                local pnl = sharedList:AddLine( nick )
-                pnl._playerID = id
-            else
-                local pnl = playersList:AddLine( nick )
-                pnl._playerID = id
+            if id ~= localId then
+                if whitelist[id] then
+                    local pnl = sharedList:AddLine( nick )
+                    pnl._playerID = id
+                else
+                    local pnl = playersList:AddLine( nick )
+                    pnl._playerID = id
+                end
             end
         end
     end
