@@ -452,8 +452,8 @@ function GPaintMenu:OnClickOpen()
     function browser.OnSelect( _, path )
         frame:Close()
 
-        -- tell the screen we wnt to open a image file
-        -- (path is relative, so we remove "data/gpaint/")
+        -- tell the screen we want to open a image file
+        -- (path is relative to gpaint folder, so we remove "data/gpaint/")
         self.parent:OnOpenImage( string.sub( path, 13 ) )
     end
 
@@ -546,6 +546,9 @@ function GPaintMenu:OnClickScreenshot()
     if self:UnsavedCheck( "#gpaint.screenshot", self.OnClickScreenshot ) then return end
 
     GPaint.TakeScreenshot( function( path )
+        if not IsValid( self.parent.entity ) then return end
+        if not self.parent.entity:CanPlayerDraw( LocalPlayer() ) then return end
+
         self.parent.relativeFilePath = nil
         self.parent.isDirty = true
         self.parent:RenderImageFile( "data/" .. path, true )

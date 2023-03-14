@@ -202,6 +202,8 @@ end
 
 -- called from the menu when the user opened a file
 function Screen:OnOpenImage( relativePath )
+    if not self.entity:CanPlayerDraw( LocalPlayer() ) then return end
+
     self.relativeFilePath = relativePath
     self.isDirty = false
 
@@ -476,8 +478,6 @@ end
 
 -- loads and renders a image file to the render target
 function Screen:RenderImageFile( path, transmit )
-    if not self.entity:CanPlayerDraw( LocalPlayer() ) then return end
-
     self:RenderToRT( function()
         local imageMaterial = Material( "../" .. path )
         imageMaterial:GetTexture( "$basetexture" ):Download()
