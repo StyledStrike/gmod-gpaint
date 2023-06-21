@@ -297,6 +297,12 @@ gnet.OnExpressLoad = function()
     GPaint.LogF( "Now we\"re using gm_express!" )
 
     express.Receive( "gpaint.transfer", function( ply, data )
+        if not IsValid( ply ) then
+            GPaint.LogF( "Ignoring gm_express data coming from a invalid player" )
+
+            return
+        end
+
         if type( data ) ~= "table" then return end
 
         local steamId = ply:SteamID()
