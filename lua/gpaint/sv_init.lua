@@ -169,17 +169,6 @@ local netCommands = {
         net.Broadcast()
     end,
 
-    [gnet.ON_INIT] = function( ply, ent )
-        if ent:GetCreator() == ply then
-            -- set the screen owner
-            ent:SetGPaintOwner( ply )
-
-            -- tell the screen owner to subscribe right away
-            gnet.StartCommand( gnet.SUBSCRIBE, ent )
-            net.Send( ply )
-        end
-    end,
-
     [gnet.SUBSCRIBE] = function( ply, ent )
         if not CanPlayerSubscribe( ply, ent ) then return end
 
@@ -290,6 +279,21 @@ net.Receive( "gpaint.command", function( _, ply )
 
     if netCommands[cmd] then
         netCommands[cmd]( ply, ent )
+    end
+end )
+
+hook.Add( "PlayerSpawnedSENT", "GPaint_SetScreenCreator", function( ply, ent )
+    if IsGPaintScreen( ent ) then
+        -- set the screen owner
+        ent:SetGPaintOwner( ply )
+
+        -- tell the screen owner to subscribe
+        timer.Simple( 1, function()
+            if IsValid( ent ) then
+                gnet.StartCommand( gnet.SUBSCRIBE, ent )
+                net.Send( ply )
+            end
+        end )
     end
 end )
 

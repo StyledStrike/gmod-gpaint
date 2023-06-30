@@ -18,8 +18,7 @@ local network = {
     BROADCAST_DATA = 5,
     REQUEST_DATA = 6,
     AWAIT_DATA = 7,
-    ON_INIT = 8,
-    UPDATE_WHITELIST = 9
+    UPDATE_WHITELIST = 8
 }
 
 function network.StartCommand( id, entity )

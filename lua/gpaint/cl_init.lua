@@ -360,15 +360,3 @@ gnet.OnExpressLoad = function()
         end
     end )
 end
-
-if game.SinglePlayer() then return end
-
-hook.Add( "OnEntityCreated", "GPaint_NotifyServer", function( ent )
-    -- give some time for this entity to completely initialize
-    timer.Simple( 0, function()
-        if GPaint.IsGPaintScreen( ent ) then
-            gnet.StartCommand( gnet.ON_INIT, ent )
-            net.SendToServer()
-        end
-    end )
-end )
