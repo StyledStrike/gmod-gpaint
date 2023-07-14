@@ -9,6 +9,10 @@ ENT.Spawnable = true
 
 ENT.model = "models/hunter/plates/plate3x5.mdl"
 
+if SERVER then
+    duplicator.RegisterEntityClass( "ent_gpaint_3x5", GPaint.MakeScreenSpawner, "Data" )
+end
+
 if CLIENT then
     ENT.IconOverride = "materials/entities/ent_gpaint_base.png"
 

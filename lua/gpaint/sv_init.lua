@@ -174,7 +174,7 @@ local netCommands = {
 
         AddSubscriber( ply, ent )
 
-        if ply == ent:GetCreator() then
+        if ply == ent:GetGPaintOwner() then
             -- ready to go
             gnet.StartCommand( gnet.AWAIT_DATA, ent )
             net.WriteBool( false )
@@ -279,21 +279,6 @@ net.Receive( "gpaint.command", function( _, ply )
 
     if netCommands[cmd] then
         netCommands[cmd]( ply, ent )
-    end
-end )
-
-hook.Add( "PlayerSpawnedSENT", "GPaint_SetScreenCreator", function( ply, ent )
-    if IsGPaintScreen( ent ) then
-        -- set the screen owner
-        ent:SetGPaintOwner( ply )
-
-        -- tell the screen owner to subscribe
-        timer.Simple( 1, function()
-            if IsValid( ent ) then
-                gnet.StartCommand( gnet.SUBSCRIBE, ent )
-                net.Send( ply )
-            end
-        end )
     end
 end )
 

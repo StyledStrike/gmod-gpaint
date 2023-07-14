@@ -2,21 +2,20 @@ AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include( "shared.lua" )
 
-ENT.spawnAngleOffset = Angle( 0, 0, 0 )
+ENT.spawnAngleOffset = Angle()
+
+duplicator.RegisterEntityClass( "ent_gpaint_base", GPaint.MakeScreenSpawner, "Data" )
 
 function ENT:SpawnFunction( ply, tr )
-    if not tr.Hit then return end
-    if not ply:CheckLimit( "gpaint_boards" ) then return end
+    if tr.Hit then
+        local angleOffset = self.spawnAngleOffset or Angle()
 
-    local ent = ents.Create( self.ClassName )
-    ent:SetPos( tr.HitPos )
-    ent:SetAngles( Angle( 90, ply:EyeAngles().y, 0 ) + ent.spawnAngleOffset )
-    ent:Spawn()
-    ent:Activate()
-
-    ply:AddCount( "gpaint_boards", ent )
-
-    return ent
+        return GPaint.MakeScreenSpawner( ply, {
+            Pos = tr.HitPos,
+            Angle = Angle( 90, ply:EyeAngles().y, 0 ) + angleOffset,
+            Class = self.ClassName
+        } )
+    end
 end
 
 function ENT:Initialize()

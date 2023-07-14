@@ -29,6 +29,34 @@ if SERVER then
     AddCSLuaFile( "gpaint/cl_init.lua" )
     AddCSLuaFile( "gpaint/cl_screen.lua" )
     AddCSLuaFile( "gpaint/cl_menu.lua" )
+
+    function GPaint.MakeScreenSpawner( ply, data )
+        if not IsValid( ply ) then return end
+        if not ply:CheckLimit( "gpaint_boards" ) then return end
+
+        local ent = ents.Create( data.Class )
+        if not IsValid( ent ) then return end
+
+        ent:SetPos( data.Pos )
+        ent:SetAngles( data.Angle )
+        ent:Spawn()
+        ent:Activate()
+
+        ply:AddCount( "gpaint_boards", ent )
+
+        -- set the screen owner
+        ent:SetGPaintOwner( ply )
+
+        -- tell the screen owner to subscribe
+        timer.Simple( 1, function()
+            if IsValid( ply ) and IsValid( ent ) then
+                GPaint.network.StartCommand( GPaint.network.SUBSCRIBE, ent )
+                net.Send( ply )
+            end
+        end )
+
+        return ent
+    end
 end
 
 if CLIENT then
