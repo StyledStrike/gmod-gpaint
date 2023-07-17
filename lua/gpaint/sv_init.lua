@@ -273,6 +273,16 @@ local netCommands = {
     end
 }
 
+hook.Add( "PlayerDisconnected", "GPaint.CleanupSubscribers", function( ply )
+    local id = ply:SteamID()
+
+    for _, ent in ipairs( ents.FindByClass( "ent_gpaint_*" ) ) do
+        if ent.subscribers then
+            ent.subscribers[id] = nil
+        end
+    end
+end )
+
 net.Receive( "gpaint.command", function( _, ply )
     local ent = net.ReadEntity()
     if not IsGPaintScreen( ent ) then return end
