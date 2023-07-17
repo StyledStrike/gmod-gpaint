@@ -17,7 +17,7 @@ ENT.model = "models/hunter/plates/plate2x3.mdl"
 function ENT:CanPlayerDraw( ply )
     if game.SinglePlayer() then return true end
 
-    if ply == self:GetGPaintOwner() then
+    if ply:SteamID() == self:GetGPaintOwnerSteamID() then
         return true
     end
 
@@ -29,7 +29,7 @@ function ENT:CanPlayerDraw( ply )
 end
 
 function ENT:SetupDataTables()
-    self:NetworkVar( "Entity", 0, "GPaintOwner" )
+    self:NetworkVar( "String", 0, "GPaintOwnerSteamID" )
     self.GPaintWhitelist = {}
 end
 
@@ -42,7 +42,7 @@ properties.Add( "gpaint.turnoff", {
         if
             GPaint.IsGPaintScreen( ent ) and
             gamemode.Call( "CanProperty", ply, "gpaint.turnoff", ent ) and
-            ply ~= ent:GetGPaintOwner()
+            ply:SteamID() ~= ent:GetGPaintOwnerSteamID()
         then
             return true
         end

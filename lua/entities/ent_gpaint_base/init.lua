@@ -35,3 +35,7 @@ end
 function ENT:UpdateTransmitState()
     return TRANSMIT_ALWAYS
 end
+
+function ENT:SetGPaintOwner( ply )
+    self:SetGPaintOwnerSteamID( ply:SteamID() )
+end

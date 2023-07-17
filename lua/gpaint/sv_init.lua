@@ -160,7 +160,7 @@ local streams = {}
 
 local netCommands = {
     [gnet.UPDATE_WHITELIST] = function( ply, ent )
-        if ply ~= ent:GetGPaintOwner() then return end
+        if ply:SteamID() ~= ent:GetGPaintOwnerSteamID() then return end
 
         gnet.ReadWhitelist( ent.GPaintWhitelist )
 
@@ -173,8 +173,10 @@ local netCommands = {
         if not CanPlayerSubscribe( ply, ent ) then return end
 
         AddSubscriber( ply, ent )
+        print( ply, ent )
+        print( ply:SteamID(), ent:GetGPaintOwnerSteamID() )
 
-        if ply == ent:GetGPaintOwner() then
+        if ply:SteamID() == ent:GetGPaintOwnerSteamID() then
             -- ready to go
             gnet.StartCommand( gnet.AWAIT_DATA, ent )
             net.WriteBool( false )

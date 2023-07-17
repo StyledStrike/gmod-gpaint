@@ -556,7 +556,7 @@ function GPaintMenu:OnClickScreenshot()
 end
 
 function GPaintMenu:OnClickShare()
-    if self.parent.entity:GetGPaintOwner() ~= LocalPlayer() then
+    if self.parent.entity:GetGPaintOwnerSteamID() ~= LocalPlayer():SteamID() then
         Derma_Message( "#gpaint.feature_blocked", "#gpaint.share_screen", "#gpaint.ok" )
 
         return
