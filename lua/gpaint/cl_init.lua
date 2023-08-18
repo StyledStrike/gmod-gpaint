@@ -24,14 +24,15 @@ function GPaint.AllocateRT()
     end
 
     --[[
-        flags I used here, in order:
+        flags used here, in order:
         - trilinear texture filtering
         - clamp S coordinates
         - clamp T coordinates
         - no mipmaps
+        - no LODs (not affected by texture quality settings)
         - is a render target (duh)
     ]]
-    local flags = bit.bor( 2, 4, 8, 256, 32768 )
+    local flags = bit.bor( 2, 4, 8, 256, 512, 32768 )
     local size = GPaint.rtResolution
 
     local rt = { isFree = false }
