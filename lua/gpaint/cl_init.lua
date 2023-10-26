@@ -270,7 +270,7 @@ local function RenderImageData( scr, data )
     scr.isBusy = false
 end
 
-local gnet = GPaint.network
+local network = GPaint.network
 
 net.Receive( "gpaint.command", function()
     local ent = net.ReadEntity()
@@ -279,37 +279,37 @@ net.Receive( "gpaint.command", function()
     local scr = GetScreenByEntity( ent )
     if not scr then return end
 
-    local cmd = net.ReadUInt( gnet.COMMAND_SIZE )
+    local cmd = net.ReadUInt( network.COMMAND_SIZE )
 
-    if cmd == gnet.CLEAR then
+    if cmd == network.CLEAR then
         scr:Clear()
 
-    elseif cmd == gnet.PEN_STROKES then
-        local strokes = gnet.ReadStrokes()
+    elseif cmd == network.PEN_STROKES then
+        local strokes = network.ReadStrokes()
         local len = #scr.strokeQueue
 
         for i, st in ipairs( strokes ) do
             scr.strokeQueue[len + i] = st
         end
 
-    elseif cmd == gnet.BROADCAST_DATA then
+    elseif cmd == network.BROADCAST_DATA then
         scr.isBusy = true
         scr:Clear()
 
-        gnet.ReadImage( ply, function( data )
+        network.ReadImage( ply, function( data )
             RenderImageData( scr, data )
         end )
 
-    elseif cmd == gnet.AWAIT_DATA then
+    elseif cmd == network.AWAIT_DATA then
         scr.isBusy = net.ReadBool()
 
-    elseif cmd == gnet.REQUEST_DATA then
+    elseif cmd == network.REQUEST_DATA then
         -- server wants us to send what the screen looks like
         local requestId = net.ReadUInt( 10 )
 
         if not scr.relativeFilePath and not scr.isDirty then
             -- if we have no image data to send...
-            gnet.StartCommand( gnet.SEND_DATA, scr.entity )
+            network.StartCommand( network.SEND_DATA, scr.entity )
             net.WriteUInt( requestId, 10 )
             net.WriteBool( false )
             net.SendToServer()
@@ -319,7 +319,7 @@ net.Receive( "gpaint.command", function()
 
         local data = scr:CaptureRT( "jpg" )
 
-        if gnet.USE_EXPRESS then
+        if network.USE_EXPRESS then
             express.Send(
                 "gpaint.transfer",
                 {
@@ -332,23 +332,23 @@ net.Receive( "gpaint.command", function()
             return
         end
 
-        gnet.StartCommand( gnet.SEND_DATA, scr.entity )
+        network.StartCommand( network.SEND_DATA, scr.entity )
         net.WriteUInt( requestId, 10 )
         net.WriteBool( true )
-        gnet.WriteImage( data )
+        network.WriteImage( data )
         net.SendToServer()
 
-    elseif cmd == gnet.SUBSCRIBE then
+    elseif cmd == network.SUBSCRIBE then
         -- server wants us to subscribe right away
         scr.wantsToSubscribe = true
 
-    elseif cmd == gnet.UPDATE_WHITELIST then
-        gnet.ReadWhitelist( ent.GPaintWhitelist )
+    elseif cmd == network.UPDATE_WHITELIST then
+        network.ReadWhitelist( ent.GPaintWhitelist )
 
     end
 end )
 
-gnet.OnExpressLoad = function()
+network.OnExpressLoad = function()
     GPaint.LogF( "Now we\"re using gm_express!" )
 
     express.Receive( "gpaint.transfer", function( data )

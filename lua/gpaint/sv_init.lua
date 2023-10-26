@@ -10,8 +10,8 @@ CreateConVar(
 )
 
 local IsValid = IsValid
-local gnet = GPaint.network
 local IsGPaintScreen = GPaint.IsGPaintScreen
+local network = GPaint.network
 
 local function IsValidData( data, fromSteamId )
     if not data then
@@ -20,7 +20,7 @@ local function IsValidData( data, fromSteamId )
         return false
     end
 
-    if #data > gnet.MAX_DATA_SIZE then
+    if #data > network.MAX_DATA_SIZE then
         GPaint.LogF( "Ignoring data from %s (too big)", fromSteamId )
 
         return false
@@ -49,7 +49,7 @@ local function AddRequest( ply, ent )
     requestId = requestId + 1
     if requestId > 1000 then requestId = 0 end
 
-    gnet.StartCommand( gnet.REQUEST_DATA, ent )
+    network.StartCommand( network.REQUEST_DATA, ent )
     net.WriteUInt( requestId, 10 )
     net.Send( owner )
 
@@ -65,7 +65,7 @@ local function CancelRequests( ply, ent )
         if p == ply then
             ent.requests[id] = nil
 
-            gnet.StartCommand( gnet.AWAIT_DATA, ent )
+            network.StartCommand( network.AWAIT_DATA, ent )
             net.WriteBool( false )
             net.Send( ply )
 
@@ -80,7 +80,7 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
     if not IsValid( targetPly ) then return end
 
     if not data then
-        gnet.StartCommand( gnet.AWAIT_DATA, ent )
+        network.StartCommand( network.AWAIT_DATA, ent )
         net.WriteBool( false )
         net.Send( targetPly )
 
@@ -89,8 +89,8 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
 
     if not IsValidData( data, fromPly:SteamID() ) then return end
 
-    if gnet.USE_EXPRESS then
-        gnet.StartCommand( gnet.AWAIT_DATA, ent )
+    if network.USE_EXPRESS then
+        network.StartCommand( network.AWAIT_DATA, ent )
         net.WriteBool( true )
         net.Send( targetPly )
 
@@ -107,8 +107,8 @@ local function FulfillRequest( id, ent, fromPly, targetPly, data )
     end
 
     -- send the image data to only one target
-    gnet.StartCommand( gnet.BROADCAST_DATA, ent )
-    gnet.WriteImage( data )
+    network.StartCommand( network.BROADCAST_DATA, ent )
+    network.WriteImage( data )
     net.Send( targetPly )
 end
 
@@ -159,17 +159,17 @@ end
 local streams = {}
 
 local netCommands = {
-    [gnet.UPDATE_WHITELIST] = function( ply, ent )
+    [network.UPDATE_WHITELIST] = function( ply, ent )
         if ply:SteamID() ~= ent:GetGPaintOwnerSteamID() then return end
 
-        gnet.ReadWhitelist( ent.GPaintWhitelist )
+        network.ReadWhitelist( ent.GPaintWhitelist )
 
-        gnet.StartCommand( gnet.UPDATE_WHITELIST, ent )
-        gnet.WriteWhitelist( ent.GPaintWhitelist )
+        network.StartCommand( network.UPDATE_WHITELIST, ent )
+        network.WriteWhitelist( ent.GPaintWhitelist )
         net.Broadcast()
     end,
 
-    [gnet.SUBSCRIBE] = function( ply, ent )
+    [network.SUBSCRIBE] = function( ply, ent )
         if not CanPlayerSubscribe( ply, ent ) then return end
 
         AddSubscriber( ply, ent )
@@ -178,7 +178,7 @@ local netCommands = {
 
         if ply:SteamID() == ent:GetGPaintOwnerSteamID() then
             -- ready to go
-            gnet.StartCommand( gnet.AWAIT_DATA, ent )
+            network.StartCommand( network.AWAIT_DATA, ent )
             net.WriteBool( false )
             net.Send( ply )
 
@@ -189,7 +189,7 @@ local netCommands = {
         end
     end,
 
-    [gnet.UNSUBSCRIBE] = function( ply, ent )
+    [network.UNSUBSCRIBE] = function( ply, ent )
         -- dont allow the screen owner to unsubscribe
         -- (cause others rely on the owner being
         -- up-to-date on what the screen looks like)
@@ -201,38 +201,38 @@ local netCommands = {
         CancelRequests( ply, ent )
     end,
 
-    [gnet.CLEAR] = function( ply, ent )
+    [network.CLEAR] = function( ply, ent )
         if not ent:CanPlayerDraw( ply ) then return end
 
         local subs = GetSubscribers( ent, ply )
         if #subs == 0 then return end
 
-        gnet.StartCommand( gnet.CLEAR, ent )
+        network.StartCommand( network.CLEAR, ent )
         net.Send( subs )
     end,
 
-    [gnet.PEN_STROKES] = function( ply, ent )
+    [network.PEN_STROKES] = function( ply, ent )
         if not ent:CanPlayerDraw( ply ) then return end
 
         local subs = GetSubscribers( ent, ply )
         if #subs == 0 then return end
 
-        local strokes = gnet.ReadStrokes()
+        local strokes = network.ReadStrokes()
         if #strokes == 0 then return end
 
-        gnet.StartCommand( gnet.PEN_STROKES, ent )
-        gnet.WriteStrokes( strokes )
+        network.StartCommand( network.PEN_STROKES, ent )
+        network.WriteStrokes( strokes )
         net.Send( subs )
     end,
 
-    [gnet.BROADCAST_DATA] = function( ply, ent )
-        if gnet.USE_EXPRESS then return end
+    [network.BROADCAST_DATA] = function( ply, ent )
+        if network.USE_EXPRESS then return end
         if not ent:CanPlayerDraw( ply ) then return end
 
         local steamId = ply:SteamID()
         if streams[steamId] then return end
 
-        streams[steamId] = gnet.ReadImage( ply, function( data )
+        streams[steamId] = network.ReadImage( ply, function( data )
             streams[steamId] = nil
 
             if not IsValid( ent ) then return end
@@ -241,13 +241,13 @@ local netCommands = {
             local subs = GetSubscribers( ent, ply )
             if #subs == 0 then return end
 
-            gnet.StartCommand( gnet.BROADCAST_DATA, ent )
-            gnet.WriteImage( data )
+            network.StartCommand( network.BROADCAST_DATA, ent )
+            network.WriteImage( data )
             net.Send( subs )
         end )
     end,
 
-    [gnet.SEND_DATA] = function( ply, ent )
+    [network.SEND_DATA] = function( ply, ent )
         if not ent.requests then return end
 
         local id = net.ReadUInt( 10 )
@@ -264,7 +264,7 @@ local netCommands = {
             return
         end
 
-        gnet.ReadImage( ply, function( data )
+        network.ReadImage( ply, function( data )
             if not IsValid( ent ) then return end
             if not IsValidData( data, steamId ) then return end
 
@@ -287,14 +287,14 @@ net.Receive( "gpaint.command", function( _, ply )
     local ent = net.ReadEntity()
     if not IsGPaintScreen( ent ) then return end
 
-    local cmd = net.ReadUInt( gnet.COMMAND_SIZE )
+    local cmd = net.ReadUInt( network.COMMAND_SIZE )
 
     if netCommands[cmd] then
         netCommands[cmd]( ply, ent )
     end
 end )
 
-gnet.OnExpressLoad = function()
+network.OnExpressLoad = function()
     GPaint.LogF( "Now we\"re using gm_express!" )
 
     express.Receive( "gpaint.transfer", function( ply, data )
@@ -325,7 +325,7 @@ gnet.OnExpressLoad = function()
             local subs = GetSubscribers( ent, ply )
             if #subs == 0 then return end
 
-            gnet.StartCommand( gnet.AWAIT_DATA, ent )
+            network.StartCommand( network.AWAIT_DATA, ent )
             net.WriteBool( true )
             net.Send( subs )
 

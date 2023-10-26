@@ -650,10 +650,10 @@ function GPaintMenu:OnClickShare()
     buttonApply:DockMargin( 0, 4, 0, 0 )
 
     buttonApply.DoClick = function()
-        local gnet = GPaint.network
+        local network = GPaint.network
 
-        gnet.StartCommand( gnet.UPDATE_WHITELIST, self.parent.entity )
-        gnet.WriteWhitelist( whitelist )
+        network.StartCommand( network.UPDATE_WHITELIST, self.parent.entity )
+        network.WriteWhitelist( whitelist )
         net.SendToServer()
 
         frame:Close()

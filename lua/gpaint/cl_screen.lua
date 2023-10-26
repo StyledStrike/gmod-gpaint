@@ -164,7 +164,7 @@ end
 local RealTime = RealTime
 local renderCapture = render.Capture
 local langGet = language.GetPhrase
-local gnet = GPaint.network
+local network = GPaint.network
 
 function Screen:Cleanup()
     GPaint.FreeRT( self.rt_index )
@@ -179,7 +179,7 @@ function Screen:Clear( transmit )
     self.transmitQueue = {}
 
     if transmit and not game.SinglePlayer() then
-        gnet.StartCommand( gnet.CLEAR, self.entity )
+        network.StartCommand( network.CLEAR, self.entity )
         net.SendToServer()
     end
 end
@@ -194,7 +194,7 @@ function Screen:OnShow()
 end
 
 function Screen:OnHide()
-    gnet.StartCommand( gnet.UNSUBSCRIBE, self.entity )
+    network.StartCommand( network.UNSUBSCRIBE, self.entity )
     net.SendToServer()
 
     self.hint = nil
@@ -334,7 +334,7 @@ function Screen:Think()
     if self.wantsToSubscribe and self.shouldSubscribe then
         self.shouldSubscribe = false
 
-        gnet.StartCommand( gnet.SUBSCRIBE, self.entity )
+        network.StartCommand( network.SUBSCRIBE, self.entity )
         net.SendToServer()
     end
 
@@ -355,8 +355,8 @@ function Screen:Think()
 
     -- send pen strokes over the network 
     if self.transmitQueue[1] and RealTime() > self.transmitDelay then
-        gnet.StartCommand( gnet.PEN_STROKES, self.entity )
-        gnet.WriteStrokes( self.transmitQueue )
+        network.StartCommand( network.PEN_STROKES, self.entity )
+        network.WriteStrokes( self.transmitQueue )
         net.SendToServer()
 
         table.Empty( self.transmitQueue )
@@ -501,7 +501,7 @@ function Screen:RenderImageFile( path, transmit )
             self.isBusy = true
             local data = self:CaptureRT( "jpg" )
 
-            if gnet.USE_EXPRESS then
+            if network.USE_EXPRESS then
                 express.Send(
                     "gpaint.transfer",
                     {
@@ -514,8 +514,8 @@ function Screen:RenderImageFile( path, transmit )
                 return
             end
 
-            gnet.StartCommand( gnet.BROADCAST_DATA, self.entity )
-            gnet.WriteImage( data, function() self.isBusy = false end )
+            network.StartCommand( network.BROADCAST_DATA, self.entity )
+            network.WriteImage( data, function() self.isBusy = false end )
             net.SendToServer()
         end
     end )
