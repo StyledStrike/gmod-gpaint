@@ -173,8 +173,6 @@ local netCommands = {
         if not CanPlayerSubscribe( ply, ent ) then return end
 
         AddSubscriber( ply, ent )
-        print( ply, ent )
-        print( ply:SteamID(), ent:GetGPaintOwnerSteamID() )
 
         if ply:SteamID() == ent:GetGPaintOwnerSteamID() then
             -- ready to go
@@ -273,6 +271,40 @@ local netCommands = {
     end
 }
 
+-- Safe guard against spam. Commands not listed here already have
+-- their own mechanics that block unsolicited net events.
+local cooldowns = {
+    [network.UPDATE_WHITELIST] = { interval = 1, players = {} },
+    [network.PEN_STROKES] = { interval = 0.1, players = {} },
+    [network.CLEAR] = { interval = 1, players = {} },
+    [network.BROADCAST_DATA] = { interval = 2, players = {} }
+}
+
+net.Receive( "gpaint.command", function( _, ply )
+    local ent = net.ReadEntity()
+    if not IsGPaintScreen( ent ) then return end
+
+    local cmd = net.ReadUInt( network.COMMAND_SIZE )
+
+    if cooldowns[cmd] then
+        local t = RealTime()
+        local id = ply:SteamID()
+        local players = cooldowns[cmd].players
+
+        if players[id] and players[id] > t then
+            GPaint.LogF( "%s <%s> sent a network command too fast!", ply:Nick(), id )
+
+            return
+        end
+
+        players[id] = t + cooldowns[cmd].interval
+    end
+
+    if netCommands[cmd] then
+        netCommands[cmd]( ply, ent )
+    end
+end )
+
 hook.Add( "PlayerDisconnected", "GPaint.CleanupSubscribers", function( ply )
     local id = ply:SteamID()
 
@@ -281,16 +313,9 @@ hook.Add( "PlayerDisconnected", "GPaint.CleanupSubscribers", function( ply )
             ent.subscribers[id] = nil
         end
     end
-end )
 
-net.Receive( "gpaint.command", function( _, ply )
-    local ent = net.ReadEntity()
-    if not IsGPaintScreen( ent ) then return end
-
-    local cmd = net.ReadUInt( network.COMMAND_SIZE )
-
-    if netCommands[cmd] then
-        netCommands[cmd]( ply, ent )
+    for _, c in pairs( cooldowns ) do
+        c.players[id] = nil
     end
 end )
 
