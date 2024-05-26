@@ -60,14 +60,6 @@ local panels = {
         Draw = DrawButton
     },
     {
-        id = "share",
-        label = "#gpaint.share_screen",
-        clickEvent = "OnClickShare",
-
-        w = 220, h = 30,
-        Draw = DrawButton
-    },
-    {
         label = "#gpaint.thickness",
         w = 220, h = 60,
         max = 200,
@@ -184,6 +176,16 @@ local panels = {
         end
     }
 }
+
+if not game.SinglePlayer() then
+    table.insert( panels, 6, {
+        label = "#gpaint.share_screen",
+        clickEvent = "OnClickShare",
+
+        w = 220, h = 30,
+        Draw = DrawButton
+    } )
+end
 
 local function GetPanelByID( id )
     for _, item in ipairs( panels ) do
