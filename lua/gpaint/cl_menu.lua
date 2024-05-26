@@ -422,7 +422,7 @@ function Menu:OnClickOpen()
     end
 
     local frame = vgui.Create( "DFrame" )
-    frame:SetSize( ScrW() * 0.6, ScrH() * 0.6 )
+    frame:SetSize( math.max( 800, ScrW() * 0.6 ), math.max( 500, ScrH() * 0.6 ) )
     frame:SetSizable( true )
     frame:SetDraggable( true )
     frame:Center()
