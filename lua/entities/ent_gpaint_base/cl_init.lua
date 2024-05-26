@@ -5,7 +5,7 @@ ENT.RenderGroup = RENDERGROUP_OPAQUE
 
 list.Set(
     "GPaintScreenOffsets",
-    ENT.model,
+    ENT.ScreenModel,
     {
         pos = Vector( -47.4, 71.1, -1.65 ),
         ang = Angle( 0, 270, 0 ),
@@ -29,20 +29,20 @@ function ENT:Initialize()
     self.offsetMatrix:Rotate( self.screenOffset.ang )
     self.offsetMatrix:Scale( self.screenOffset.scale )
 
-    self.finalMatrix = Matrix()
+    self.screenMatrix = Matrix()
 
     GPaint.CreateScreen( self )
 end
 
 function ENT:Think()
-    self.finalMatrix = self:GetWorldTransformMatrix() * self.offsetMatrix
+    self.screenMatrix = self:GetWorldTransformMatrix() * self.offsetMatrix
 end
 
 function ENT:GetCursorPos( ply )
     local offset = self.screenOffset
 
     local pos = self:LocalToWorld( offset.pos )
-    local normal = -self.finalMatrix:GetUp()
+    local normal = -self.screenMatrix:GetUp()
 
     local start = ply:GetShootPos()
     local dir = ply:GetAimVector()
@@ -53,6 +53,6 @@ function ENT:GetCursorPos( ply )
     local b = normal:Dot( pos - start ) / a
     if b < 0 then return end
 
-    local hitPos = self.finalMatrix:GetInverseTR() * ( start + dir * b )
+    local hitPos = self.screenMatrix:GetInverseTR() * ( start + dir * b )
     return hitPos.x / offset.scale.x ^ 2, hitPos.y / offset.scale.y ^ 2
 end

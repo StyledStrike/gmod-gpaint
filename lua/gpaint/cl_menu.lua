@@ -1,104 +1,101 @@
-local surface = surface
-local langGet = language.GetPhrase
+local colors = {
+    text = Color( 255, 255, 255 ),
+    highlight = Color( 94, 0, 196 ),
+    bgButton = Color( 0, 0, 0, 255 )
+}
 
 local materials = {
-    picker = Material( "gui/colors.png" ),
+    hue = Material( "gui/colors.png" ),
     saturation = Material( "vgui/gradient-r" ),
     value = Material( "vgui/gradient-d" )
 }
 
-local colors = {
-    highlight = Color( 94, 0, 196 ),
-    background = Color( 0, 0, 0, 255 )
-}
+local L = language.GetPhrase
 
-local function isWithinBox( x, y, bx, by, bw, bh )
-    if not x then return false end
-    if x < bx or x > bx + bw then return false end
-    if y < by or y > by + bh then return false end
+local SetMaterial = surface.SetMaterial
+local SetDrawColor = surface.SetDrawColor
+local DrawRect = surface.DrawRect
+local DrawSimpleText = draw.SimpleText
+local DrawTexturedRect = surface.DrawTexturedRect
 
-    return true
+local function DrawButton( self, _, x, y, isSelected )
+    draw.RoundedBox( 6, x, y, self.w, self.h, isSelected and colors.highlight or colors.bgButton )
+    DrawSimpleText( self.label, "Trebuchet24", x + self.w * 0.5, y + self.h * 0.5, colors.text, 1, 1 )
 end
 
-local function drawButton( self, _, x, y, hover )
-    draw.RoundedBox( 8, x, y, self.w, self.h, hover and colors.highlight or colors.background )
-    surface.SetTextPos( x + 10, y + 3 )
-    surface.DrawText( self.label )
-end
+local panels = {
+    {
+        label = "#gpaint.new",
+        clickEvent = "OnClickNew",
 
-local menuItems = {
-    {
-        id = "new",
-        label = langGet( "gpaint.new" ),
         w = 220, h = 30,
-        clickFuncName = "OnClickNew",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
-        id = "save",
-        label = langGet( "gpaint.save" ),
+        label = "#gpaint.save",
+        clickEvent = "OnClickSave",
+
         w = 220, h = 30,
-        clickFuncName = "OnClickSave",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
-        id = "saveas",
-        label = langGet( "gpaint.saveas" ),
+        label = "#gpaint.saveas",
+        clickEvent = "OnClickSaveAs",
+
         w = 220, h = 30,
-        clickFuncName = "OnClickSaveAs",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
-        id = "open",
-        label = langGet( "gpaint.open" ),
+        label = "#gpaint.open",
+        clickEvent = "OnClickOpen",
+
         w = 220, h = 30,
-        clickFuncName = "OnClickOpen",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
-        id = "screenshot",
-        label = langGet( "gpaint.screenshot" ),
+        label = "#gpaint.screenshot",
+        clickEvent = "OnClickScreenshot",
+
         w = 220, h = 30,
-        clickFuncName = "OnClickScreenshot",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
         id = "share",
-        label = langGet( "gpaint.share_screen" ),
+        label = "#gpaint.share_screen",
+        clickEvent = "OnClickShare",
+
         w = 220, h = 30,
-        clickFuncName = "OnClickShare",
-        paint = drawButton
+        Draw = DrawButton
     },
     {
-        id = "thickness",
-        label = langGet( "gpaint.thickness" ),
+        label = "#gpaint.thickness",
         w = 220, h = 60,
         max = 200,
 
-        paint = function( self, mn, x, y )
-            surface.SetDrawColor( colors.background:Unpack() )
-            surface.DrawRect( x, y + 30, self.w, self.h - 30 )
+        Draw = function( self, m, x, y )
+            local h = self.h - 30
+            y = y + 30
 
-            surface.SetDrawColor( colors.highlight:Unpack() )
-            surface.DrawRect( x, y + 30, self.w * ( mn.parent.penThickness / self.max ), self.h - 30 )
+            SetDrawColor( colors.bgButton:Unpack() )
+            DrawRect( x, y, self.w, h )
 
-            surface.SetTextPos( x, y )
-            surface.DrawText( self.label )
+            SetDrawColor( colors.highlight:Unpack() )
+            DrawRect( x, y, self.w * ( m.screen.penThickness / self.max ), h )
 
-            surface.SetTextPos( x + self.w - 55, y )
-            surface.DrawText( mn.parent.penThickness .. "px" )
+            DrawSimpleText( self.label, "Trebuchet24", x + 2, y, colors.text, 0, 4 )
+            DrawSimpleText( m.screen.penThickness .. "px", "Trebuchet24", x + self.w - 2, y, colors.text, 2, 4 )
         end,
 
-        drag = function( self, mn, x, y )
+        OnCursor = function( self, m, x, y )
             if y < 30 then return end
 
             local value = math.Round( ( x / self.w ) * self.max )
-            mn.parent.penThickness = math.Clamp( value, 1, self.max )
+            m.screen.penThickness = math.Clamp( value, 1, self.max )
         end
     },
     {
         id = "color",
-        label = langGet( "gpaint.color" ),
+        label = "#gpaint.color",
         w = 220, h = 200,
 
         hue = 0,
@@ -106,76 +103,75 @@ local menuItems = {
         saturation = 1,
         base = Color( 0, 0, 0 ),
 
-        paint = function( self, mn, x, y )
-            surface.SetTextPos( x, y )
-            surface.DrawText( self.label )
+        Draw = function( self, m, x, y )
+            DrawSimpleText( self.label, "Trebuchet24", x, y, colors.text, 0, 0 )
 
-            local penColor = mn.parent.penColor
+            local penColor = m.screen.penColor
 
-            surface.SetDrawColor( penColor.r, penColor.g, penColor.b, 255 )
-            surface.DrawRect( x + self.w - 20, y + 4, 20, 20 )
+            SetDrawColor( penColor.r, penColor.g, penColor.b, 255 )
+            DrawRect( x + self.w - 20, y + 4, 20, 20 )
 
-            surface.SetDrawColor( 255, 255, 255, 255 )
+            SetDrawColor( 255, 255, 255, 255 )
             surface.DrawOutlinedRect( x + self.w - 20, y + 4, 20, 20, 1 )
 
             y = y + 32
 
-            local hueWidth = 40
-            local pickerHeight = self.h - 32
-            local saturationX = x + hueWidth + 8
+            local hueW = 40
+            local pickerH = self.h - 32
+            local saturationX = x + hueW + 8
             local saturationW = self.w - 48
 
-            -- hue
-            surface.SetDrawColor( 255, 255, 255, 255 )
-            surface.SetMaterial( materials.picker )
-            surface.DrawTexturedRect( x, y, hueWidth, pickerHeight )
+            -- Hue
+            SetDrawColor( 255, 255, 255, 255 )
+            SetMaterial( materials.hue )
+            DrawTexturedRect( x, y, hueW, pickerH )
 
-            -- saturation
-            surface.SetDrawColor( self.base.r, self.base.g, self.base.b, 255 )
-            surface.DrawRect( saturationX, y, saturationW, pickerHeight )
+            -- Saturation
+            SetDrawColor( self.base.r, self.base.g, self.base.b, 255 )
+            DrawRect( saturationX, y, saturationW, pickerH )
 
-            surface.SetDrawColor( 255, 255, 255, 255 )
-            surface.SetMaterial( materials.saturation )
-            surface.DrawTexturedRect( saturationX, y, saturationW, pickerHeight )
+            SetDrawColor( 255, 255, 255, 255 )
+            SetMaterial( materials.saturation )
+            DrawTexturedRect( saturationX, y, saturationW, pickerH )
 
-            -- value
-            surface.SetDrawColor( 0, 0, 0, 255 )
-            surface.SetMaterial( materials.value )
-            surface.DrawTexturedRect( saturationX, y, saturationW, pickerHeight )
+            -- Value
+            SetDrawColor( 0, 0, 0, 255 )
+            SetMaterial( materials.value )
+            DrawTexturedRect( saturationX, y, saturationW, pickerH )
             draw.NoTexture()
 
-            -- selected hue
-            surface.SetDrawColor( 255, 255, 255, 255 )
-            surface.DrawOutlinedRect( x - 1, y + self.hue * pickerHeight - 2, hueWidth + 2, 3, 1 )
+            -- Selected hue
+            SetDrawColor( 255, 255, 255, 255 )
+            surface.DrawOutlinedRect( x - 1, y + self.hue * pickerH - 2, hueW + 2, 3, 1 )
 
-            -- selected saturation / value
+            -- Selected saturation / value
             local selectionX = saturationX + ( 1 - self.saturation ) * saturationW
-            local selectionY = y + ( 1 - self.value ) * pickerHeight
+            local selectionY = y + ( 1 - self.value ) * pickerH
 
             surface.DrawCircle( selectionX, selectionY, 2, 0, 0, 0, 255 )
             surface.DrawCircle( selectionX, selectionY, 3, 255, 255, 255, 255 )
         end,
 
-        drag = function( self, mn, x, y )
-            local pickerHeight = self.h - 32
+        OnCursor = function( self, m, x, y )
+            local pickerH = self.h - 32
 
             if x < 40 then
-                -- hue picker
-                self.hue = math.Clamp( ( y - 31 ) / pickerHeight, 0, 1 )
+                -- Hue picker
+                self.hue = math.Clamp( ( y - 31 ) / pickerH, 0, 1 )
 
-                local colorX = materials.picker:Width() * 0.5
-                local colorY = math.Clamp( self.hue * materials.picker:Height(), 0, materials.picker:Height() - 1 )
-                local clr = materials.picker:GetColor( colorX, colorY )
+                local colorX = materials.hue:Width() * 0.5
+                local colorY = math.Clamp( self.hue * materials.hue:Height(), 0, materials.hue:Height() - 1 )
+                local clr = materials.hue:GetColor( colorX, colorY )
 
                 local h = ColorToHSV( clr )
                 self.base = HSVToColor( h, 1, 1 )
 
-                mn.parent.penColor = HSVToColor( h, self.saturation, self.value )
+                m.screen.penColor = HSVToColor( h, self.saturation, self.value )
             else
-                -- saturation picker
+                -- Saturation picker
                 local saturationW = self.w - 48
                 local relativeX = ( x - 48 ) / saturationW
-                local relativeY = ( y - 32 ) / pickerHeight
+                local relativeY = ( y - 32 ) / pickerH
 
                 self.value = 1 - math.Clamp( relativeY, 0, 1 )
                 self.saturation = 1 - math.Clamp( relativeX, 0, 1 )
@@ -183,79 +179,75 @@ local menuItems = {
                 local h = ColorToHSV( self.base )
                 local clr = HSVToColor( h, self.saturation, self.value )
 
-                mn.parent.penColor = Color( clr.r, clr.g, clr.b )
+                m.screen.penColor = Color( clr.r, clr.g, clr.b )
             end
         end
     }
 }
 
-local function GetItemByID( id )
-    for _, item in ipairs( menuItems ) do
+local function GetPanelByID( id )
+    for _, item in ipairs( panels ) do
         if item.id == id then return item end
     end
+end
+
+local function IsInsideBox( x, y, bx, by, bw, bh )
+    return x > bx and y > by and x < bx + bw and y < by + bh
 end
 
 --[[
     This is a sort-of class to handle the "menu"
     you see in-game for each GPaint screen.
 ]]
-local GPaintMenu = {}
+local Menu = GPaint.Menu or {}
 
-GPaintMenu.__index = GPaintMenu
+GPaint.Menu = Menu
+Menu.__index = Menu
 
-function GPaint.CreateMenu( parent )
-    local mn = {
-        parent = parent
-    }
-
-    setmetatable( mn, GPaintMenu )
-
-    mn.title = ""
-    mn.animation = 0
-
-    return mn
+function GPaint.CreateMenu( screen )
+    return setmetatable( {
+        screen = screen,
+        isOpen = false,
+        isUnsaved = false,
+        title = "",
+        animation = 0
+    }, Menu )
 end
 
---[[
-    GPaintMenu "class"
-]]
-
-function GPaintMenu:Cleanup()
-    if IsValid( self.browserFrame ) then
-        self.browserFrame:Close()
+function Menu:Remove()
+    if IsValid( self.frameFileBrowser ) then
+        self.frameFileBrowser:Close()
     end
 
-    if IsValid( self.shareFrame ) then
-        self.shareFrame:Close()
+    if IsValid( self.frameWhitelist ) then
+        self.frameWhitelist:Close()
     end
 end
 
-function GPaintMenu:Open()
+function Menu:Open()
     self.isOpen = true
-    self:SetColor( self.parent.penColor )
+    self:SetPenColor( self.screen.penColor )
 end
 
-function GPaintMenu:Close()
+function Menu:Close()
     self.isOpen = false
 end
 
-function GPaintMenu:SetTitle( title )
-    self.title = title or "<unsaved image>"
+function Menu:IsDraggingItem()
+    return self.selection and self.selection.beingDragged
+end
+
+function Menu:SetTitle( title )
+    self.title = title or L"gpaint.new"
 
     if string.len( self.title ) > 35 then
         self.title = "..." .. string.Right( self.title, 32 )
     end
 end
 
-function GPaintMenu:IsDraggingItem()
-    return self.selection and self.selection.beingDragged
-end
-
-function GPaintMenu:SetColor( color )
+function Menu:SetPenColor( color )
     local h, s, v = ColorToHSV( color )
-
-    -- update the color picker
-    local item = GetItemByID( "color" )
+    local item = GetPanelByID( "color" )
 
     item.base = HSVToColor( h, 1, 1 )
     item.hue = 1 - ( h / 360 )
@@ -263,95 +255,101 @@ function GPaintMenu:SetColor( color )
     item.value = v
 end
 
-function GPaintMenu:OnCursor( x, y, pressed, justPressed )
-    local selection = self.selection
-    if not selection then return end
-
-    local item = menuItems[selection.index]
-
-    if justPressed and item.clickFuncName then
-        self[item.clickFuncName]( self )
-        self:Close()
-    end
-
-    if pressed and item.drag then
-        selection.beingDragged = true
-        item:drag( self, x - selection.x, y - selection.y )
-    else
-        selection.beingDragged = false
-    end
-end
-
-function GPaintMenu:Render( screenHeight )
+function Menu:Render( h )
     self.animation = Lerp( FrameTime() * 15, self.animation, self.isOpen and 1 or 0 )
     if self.animation < 0.01 then return end
 
     surface.SetAlphaMultiplier( self.animation )
 
     local w = 240
-    local halfWidth = w * 0.5
     local x = - w + ( self.animation * ( w + 8 ) )
     local y = 8
 
-    ---- background
-    surface.SetDrawColor( 80, 80, 80, 150 )
-    surface.DrawRect( x, y, w, screenHeight - 16 )
+    -- Background
+    SetDrawColor( 80, 80, 80, 150 )
+    DrawRect( x, y, w, h - 16 )
 
-    surface.SetTextColor( 255, 255, 255, 255 )
-    surface.SetFont( "Trebuchet18" )
+    -- Title
+    SetDrawColor( colors.highlight:Unpack() )
+    DrawRect( x, y, w, 30 )
 
-    ---- title
-    local textWidth = surface.GetTextSize( self.title )
+    DrawSimpleText( self.title, "Trebuchet18", x + ( w * 0.5 ), y + 15, colors.text, 1, 1 )
 
-    surface.SetDrawColor( colors.highlight:Unpack() )
-    surface.DrawRect( x, y, w, 30 )
-
-    surface.SetTextPos( x + halfWidth - ( textWidth * 0.5 ), y + 5 )
-    surface.DrawText( self.title )
-
-    ---- menu items
-    surface.SetFont( "Trebuchet24" )
-
+    -- Menu items
     x = x + 8
     y = y + 42
 
-    local cX, cY = self.parent.cursorX, self.parent.cursorY
-    local selection
+    local cX, cY = self.screen.cursorX, self.screen.cursorY
+    local selection, isSelected
 
-    for index, item in ipairs( menuItems ) do
-        local hover = isWithinBox( cX, cY, x, y, item.w, item.h )
-        if hover then
-            selection = {
-                index = index,
-                x = x,
-                y = y
-            }
+    for i, panel in ipairs( panels ) do
+        isSelected = cX and IsInsideBox( cX, cY, x, y, panel.w, panel.h )
+
+        if isSelected then
+            selection = { index = i, x = x, y = y }
         end
 
-        item:paint( self, x, y, hover )
-        y = y + item.h + 4
+        panel:Draw( self, x, y, isSelected )
+        y = y + panel.h + 4
     end
 
-    -- only change what the current selected
-    -- item is when the cursor is not being pressed
-    if self.parent.cursorState == 0 then
+    -- Only change the current selected panel when the cursor is not being pressed
+    if self.screen.cursorState == 0 then
         self.selection = selection
     end
 
     surface.SetAlphaMultiplier( 1 )
 end
 
-function GPaintMenu:OnClickNew()
-    if self:UnsavedCheck( "#gpaint.new", self.OnClickNew ) then return end
+function Menu:OnCursor( x, y, pressed, justPressed )
+    local selection = self.selection
+    if not selection then return end
 
-    self.parent.relativeFilePath = nil
-    self.parent:Clear( true )
+    local item = panels[selection.index]
+
+    if justPressed and item.clickEvent then
+        self[item.clickEvent]( self )
+        self:Close()
+    end
+
+    if pressed and item.OnCursor then
+        selection.beingDragged = true
+        item:OnCursor( self, x - selection.x, y - selection.y )
+    else
+        selection.beingDragged = false
+    end
 end
 
-function GPaintMenu:OnClickSave( forceNew )
-    local data = self.parent:CaptureRT()
+--- If we have unsaved stuff, display a dialog to confirm the user's intent.
+function Menu:UnsavedCheck( title, callback )
+    if self.isUnsaved then
+        Derma_Query(
+            "#gpaint.unsaved_changes", title, "#gpaint.yes",
+            function()
+                self.isUnsaved = false
+                callback( self )
+            end,
+            "#gpaint.no"
+        )
 
-    local function writeFile( path )
+        return true
+    end
+
+    return false
+end
+
+function Menu:OnClickNew()
+    if self:UnsavedCheck( "#gpaint.new", self.OnClickNew ) then return end
+
+    self.screen.path = nil
+    self.screen:Clear( true )
+    self:SetTitle()
+end
+
+function Menu:OnClickSave( forceNew )
+    local data = self.screen:CaptureRT()
+
+    local function WriteFile( path )
         GPaint.EnsureDataDir()
 
         local dir = string.GetPathFromFilename( path )
@@ -364,72 +362,67 @@ function GPaintMenu:OnClickSave( forceNew )
 
         if file.Exists( path, "DATA" ) then
             if self then
-                self.parent.relativeFilePath = string.sub( path, 8 ) -- remove "gpaint/"
-                self.parent.isDirty = false
-
-                self:SetTitle( self.parent.relativeFilePath )
+                self.screen.path = path
+                self.isUnsaved = false
+                self:SetTitle( self.screen.path )
             end
 
-            notification.AddLegacy( string.format( langGet( "gpaint.saved_to" ), path ), NOTIFY_GENERIC, 5 )
+            notification.AddLegacy( string.format( L"gpaint.saved_to", path ), NOTIFY_GENERIC, 5 )
         else
-            notification.AddLegacy( langGet( "gpaint.save_failed" ), NOTIFY_ERROR, 5 )
+            notification.AddLegacy( L"gpaint.save_failed", NOTIFY_ERROR, 5 )
         end
     end
 
-    local relativePath = self.parent.relativeFilePath
+    local path = self.screen.path
 
-    if not relativePath or forceNew then
+    if not path or forceNew then
         local now = os.date( "*t" )
-        relativePath = string.format( "%04i_%02i_%02i %02i-%02i-%02i", now.year, now.month, now.day, now.hour, now.min, now.sec )
+        path = string.format( "gpaint/%04i_%02i_%02i %02i-%02i-%02i", now.year, now.month, now.day, now.hour, now.min, now.sec )
     end
 
-    local fullPath = "gpaint/" .. relativePath
+    if file.Exists( path, "DATA" ) then
+        WriteFile( path )
+        return
+    end
 
-    if file.Exists( fullPath, "DATA" ) then
-        writeFile( fullPath )
-    else
-        Derma_StringRequest(
-            "#gpaint.save",
-            "#gpaint.enter_name",
-            relativePath,
-            function( result )
-                relativePath = string.Trim( result )
+    Derma_StringRequest(
+        "#gpaint.save",
+        "#gpaint.enter_name",
+        path,
+        function( result )
+            path = string.Trim( result )
 
-                if string.len( relativePath ) == 0 then
-                    Derma_Message( "#gpaint.enter_name", "#gpaint.error", "#gpaint.ok" )
-
-                    return
-                end
-
-                local ext = string.Right( relativePath, 4 )
-
-                if ext ~= ".png" and ext ~= ".jpg" then
-                    relativePath = relativePath .. ".png"
-                end
-
-                fullPath = "gpaint/" .. relativePath
-
-                writeFile( fullPath )
+            if string.len( path ) == 0 then
+                Derma_Message( "#gpaint.enter_name", "#gpaint.error", "#gpaint.ok" )
+                return
             end
-        )
-    end
+
+            local ext = string.Right( path, 4 )
+
+            if ext ~= ".png" and ext ~= ".jpg" then
+                path = path .. ".png"
+            end
+
+            WriteFile( path )
+        end
+    )
 end
 
-function GPaintMenu:OnClickSaveAs()
+function Menu:OnClickSaveAs()
     self:OnClickSave( true )
 end
 
-function GPaintMenu:OnClickOpen()
+function Menu:OnClickOpen()
     if self:UnsavedCheck( "#gpaint.open", self.OnClickOpen ) then return end
 
     GPaint.EnsureDataDir()
 
-    if IsValid( self.browserFrame ) then
-        self.browserFrame:Close()
+    if IsValid( self.frameFileBrowser ) then
+        self.frameFileBrowser:Close()
     end
 
     local frame = vgui.Create( "DFrame" )
-    frame:SetSize( ScrW() * 0.8, ScrH() * 0.8 )
+    frame:SetSize( ScrW() * 0.6, ScrH() * 0.6 )
     frame:SetSizable( true )
     frame:SetDraggable( true )
     frame:Center()
@@ -438,23 +431,22 @@ function GPaintMenu:OnClickOpen()
     frame:SetIcon( "materials/icon16/image.png" )
     frame:SetDeleteOnClose( true )
 
-    self.browserFrame = frame
+    self.frameFileBrowser = frame
 
     local browser = vgui.Create( "DFileBrowser", frame )
     browser:Dock( FILL )
     browser:SetModels( true )
     browser:SetPath( "GAME" )
-    browser:SetBaseFolder( "data/gpaint" )
-    browser:SetCurrentFolder( "" )
+    browser:SetBaseFolder( "data" )
+    browser:SetCurrentFolder( "gpaint" )
     browser:SetOpen( true )
     browser.thumbnailQueue = {}
 
     function browser.OnSelect( _, path )
         frame:Close()
 
-        -- tell the screen we want to open a image file
-        -- (path is relative to gpaint folder, so we remove "data/gpaint/")
-        self.parent:OnOpenImage( string.sub( path, 13 ) )
+        path = string.sub( path, 6 ) -- remove "data/"
+        self.screen:OnOpenImage( path )
     end
 
     function browser.OnRightClick( s, path )
@@ -464,7 +456,7 @@ function GPaintMenu:OnClickOpen()
             "#gpaint.delete",
             function()
                 Derma_Query(
-                    langGet( "gpaint.delete_query" ) .. "\n" .. path,
+                    L( "gpaint.delete_query" ) .. "\n" .. path,
                     "#gpaint.delete", "#gpaint.yes",
                     function()
                         file.Delete( string.sub( path, 6 ) )
@@ -478,19 +470,30 @@ function GPaintMenu:OnClickOpen()
         menu:Open()
     end
 
-    -- copy/pasted ShowFolder from DFileBrowser,
-    -- but modified to show icons instead of a list of names
+    local filters = {
+        "*.png",
+        "*.jpg"
+    }
+
+    local function PaintOverIcon( s, w )
+        SetDrawColor( 0, 0, 0, 200 )
+        DrawRect( 0, 0, w, 20 )
+
+        surface.SetFont( "Trebuchet18" )
+        surface.SetTextPos( 4, 2 )
+        surface.SetTextColor( 255, 255, 255, 255 )
+        surface.DrawText( s._label )
+    end
+
+    --- Custom version of ShowFolder from DFileBrowser,
+    --- modified to show icons instead of a list of names.
     function browser.ShowFolder( s, path )
         if not IsValid( s.Files ) then return end
 
         s.Files:Clear()
+        s.Files:DockPadding( 4, 4, 4, 4 )
 
         if not path then return end
-
-        local filters = {
-            "*.png",
-            "*.jpg"
-        }
 
         for _, filter in pairs( filters ) do
             local files = file.Find( string.Trim( path .. "/" .. filter, "/" ), s.m_strPath )
@@ -506,22 +509,15 @@ function GPaintMenu:OnClickOpen()
                     icon, string.format( "../%s/%s", path, v )
                 }
 
-                icon.PaintOver = function( _, selfW )
-                    surface.SetDrawColor( 0, 0, 0, 200 )
-                    surface.DrawRect( 0, 0, selfW, 20 )
-
-                    surface.SetFont( "Trebuchet18" )
-                    surface.SetTextPos( 4, 2 )
-                    surface.SetTextColor( 255, 255, 255, 255 )
-                    surface.DrawText( v )
-                end
+                icon._label = v
+                icon.PaintOver = PaintOverIcon
 
                 icon.DoClick = function()
-                    s.OnSelect( s, path .. "/" .. v, icon )
+                    s.OnSelect( s, path .. "/" .. v )
                 end
 
                 icon.DoRightClick = function()
-                    s.OnRightClick( s, path .. "/" .. v, icon )
+                    s.OnRightClick( s, path .. "/" .. v )
                 end
             end
         end
@@ -542,28 +538,28 @@ function GPaintMenu:OnClickOpen()
     end
 end
 
-function GPaintMenu:OnClickScreenshot()
+function Menu:OnClickScreenshot()
     if self:UnsavedCheck( "#gpaint.screenshot", self.OnClickScreenshot ) then return end
 
     GPaint.TakeScreenshot( function( path )
-        if not IsValid( self.parent.entity ) then return end
-        if not self.parent.entity:CanPlayerDraw( LocalPlayer() ) then return end
+        if not IsValid( self.screen.entity ) then return end
+        if not self.screen.entity:CanPlayerDraw( LocalPlayer() ) then return end
 
-        self.parent.relativeFilePath = nil
-        self.parent.isDirty = true
-        self.parent:RenderImageFile( "data/" .. path, true )
+        self.screen.path = nil
+        self.isUnsaved = true
+        self:SetTitle()
+        self.screen:RenderImageFile( path, true )
     end )
 end
 
-function GPaintMenu:OnClickShare()
-    if self.parent.entity:GetGPaintOwnerSteamID() ~= LocalPlayer():SteamID() then
+function Menu:OnClickShare()
+    if self.screen.entity:GetGPaintOwnerSteamID() ~= LocalPlayer():SteamID() then
         Derma_Message( "#gpaint.feature_blocked", "#gpaint.share_screen", "#gpaint.ok" )
-
         return
     end
 
-    if IsValid( self.shareFrame ) then
-        self.shareFrame:Close()
+    if IsValid( self.frameWhitelist ) then
+        self.frameWhitelist:Close()
     end
 
     local frame = vgui.Create( "DFrame" )
@@ -576,34 +572,30 @@ function GPaintMenu:OnClickShare()
     frame:SetIcon( "materials/icon16/group.png" )
     frame:SetDeleteOnClose( true )
 
-    self.shareFrame = frame
+    self.frameWhitelist = frame
 
-    local whitelist = table.Copy( self.parent.entity.GPaintWhitelist )
-    local updateLists
+    local whitelist = table.Copy( self.screen.entity.GPaintWhitelist )
+    local UpdateLists
 
-    ------ players list ------
-
+    -- Available players list
     local playersList = vgui.Create( "DListView", frame )
     playersList:SetMultiSelect( false )
     playersList:AddColumn( "#gpaint.all_players" )
 
     playersList.OnRowSelected = function( _, _, pnl )
-        whitelist[pnl._playerID] = true
-        updateLists()
+        whitelist[pnl._playerId] = true
+        UpdateLists()
     end
 
-    ------ whitelisted players ------
-
+    -- Whitelisted players
     local sharedList = vgui.Create( "DListView", frame )
     sharedList:SetMultiSelect( false )
     sharedList:AddColumn( "#gpaint.shared_with" )
 
     sharedList.OnRowSelected = function( _, _, pnl )
-        whitelist[pnl._playerID] = nil
-        updateLists()
+        whitelist[pnl._playerId] = nil
+        UpdateLists()
     end
-
-    ------ divider & function to update lists ------
 
     local div = vgui.Create( "DHorizontalDivider", frame )
     div:Dock( FILL )
@@ -614,7 +606,7 @@ function GPaintMenu:OnClickShare()
     div:SetRightMin( 100 )
     div:SetLeftWidth( 200 )
 
-    updateLists = function()
+    UpdateLists = function()
         playersList:Clear()
         sharedList:Clear()
 
@@ -631,18 +623,16 @@ function GPaintMenu:OnClickShare()
             if id ~= localId then
                 if whitelist[id] then
                     local pnl = sharedList:AddLine( nick )
-                    pnl._playerID = id
+                    pnl._playerId = id
                 else
                     local pnl = playersList:AddLine( nick )
-                    pnl._playerID = id
+                    pnl._playerId = id
                 end
             end
         end
     end
 
-    updateLists()
-
-    ------ "apply" button ------
+    UpdateLists()
 
     local buttonApply = vgui.Create( "DButton", frame )
     buttonApply:SetText( "#gpaint.apply" )
@@ -650,30 +640,10 @@ function GPaintMenu:OnClickShare()
     buttonApply:DockMargin( 0, 4, 0, 0 )
 
     buttonApply.DoClick = function()
-        local network = GPaint.network
-
-        network.StartCommand( network.UPDATE_WHITELIST, self.parent.entity )
-        network.WriteWhitelist( whitelist )
+        GPaint.StartCommand( GPaint.UPDATE_WHITELIST, self.screen.entity )
+        GPaint.WriteWhitelist( whitelist )
         net.SendToServer()
 
         frame:Close()
     end
-end
-
--- if we have unsaved stuff, display a dialog to confirm the user"s intent
-function GPaintMenu:UnsavedCheck( title, callback )
-    if self.parent.isDirty then
-        Derma_Query(
-            "#gpaint.unsaved_changes", title, "#gpaint.yes",
-            function()
-                self.parent.isDirty = false
-                callback( self )
-            end,
-            "#gpaint.no"
-        )
-
-        return true
-    end
-
-    return false
 end

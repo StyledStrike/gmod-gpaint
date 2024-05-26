@@ -7,7 +7,7 @@ ENT.PrintName = "GPaint (Painting)"
 ENT.Category = "GPaint"
 ENT.Spawnable = true
 
-ENT.model = "models/maxofs2d/gm_painting.mdl"
+ENT.ScreenModel = "models/maxofs2d/gm_painting.mdl"
 ENT.spawnAngleOffset = Angle( -90, 180, 0 )
 
 if SERVER then
@@ -19,7 +19,7 @@ if CLIENT then
 
     list.Set(
         "GPaintScreenOffsets",
-        ENT.model,
+        ENT.ScreenModel,
         {
             pos = Vector( 1, -30.1, 16.3 ),
             ang = Angle( 180, 270, 90 ),

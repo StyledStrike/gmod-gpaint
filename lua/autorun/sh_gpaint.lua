@@ -1,67 +1,159 @@
-GPaint = {
-    rtResolution = 512
-}
+GPaint = GPaint or {}
+
+if CLIENT then
+    -- Width/height for every render target created by GPaint
+    GPaint.RT_SIZE = 512
+end
+
+-- Max. number of strokes on a net message
+GPaint.MAX_STROKES = 15
+
+-- Used on net.WriteUInt for the command ID
+GPaint.COMMAND_SIZE = 4
+
+-- Command IDs (Max. ID when COMMAND_SIZE = 4 is 15)
+GPaint.SUBSCRIBE = 0
+GPaint.UNSUBSCRIBE = 1
+GPaint.CLEAR = 2
+GPaint.PEN_STROKES = 3
+GPaint.REQUEST_DATA = 4
+GPaint.SET_LOADING = 5
+GPaint.UPDATE_WHITELIST = 6
 
 CreateConVar(
     "gpaint_max_render_distance",
     "3000",
     bit.bor( FCVAR_ARCHIVE, FCVAR_REPLICATED ),
-    "[GPaint] How close players need to be before syncing and rendering screens. Higher values can affect network performance",
+    "How close players need to be to render screens.",
     300, 9999
 )
 
-function GPaint.LogF( str, ... )
-    MsgC( Color( 182, 0, 206 ), "[GPaint] ", color_white, string.format( str, ... ), "\n" )
+function GPaint.PrintF( str, ... )
+    MsgC( SERVER and Color( 0, 0, 255 ) or Color( 182, 0, 206 ), "[GPaint] ",
+        Color( 255, 255, 255 ), string.format( str, ... ), "\n" )
 end
 
 function GPaint.IsGPaintScreen( ent )
-    return IsValid( ent ) and (
-        ent:GetClass() == "ent_gpaint_base" or
-        ent.Base == "ent_gpaint_base"
-    )
+    return IsValid( ent ) and ( ent:GetClass() == "ent_gpaint_base" or ent.Base == "ent_gpaint_base" )
 end
 
-if SERVER then
-    include( "gpaint/sh_net.lua" )
-    include( "gpaint/sv_init.lua" )
+function GPaint.StartCommand( id, ent )
+    net.Start( "gpaint.command", false )
+    net.WriteEntity( ent )
+    net.WriteUInt( id, GPaint.COMMAND_SIZE )
+end
 
-    AddCSLuaFile( "gpaint/sh_net.lua" )
-    AddCSLuaFile( "gpaint/cl_init.lua" )
-    AddCSLuaFile( "gpaint/cl_screen.lua" )
-    AddCSLuaFile( "gpaint/cl_menu.lua" )
+local WriteUInt = net.WriteUInt
 
-    function GPaint.MakeScreenSpawner( ply, data )
-        if not IsValid( ply ) then return end
-        if not ply:CheckLimit( "gpaint_boards" ) then return end
+function GPaint.WriteStrokes( strokes )
+    local count = math.min( #strokes, GPaint.MAX_STROKES )
 
-        local ent = ents.Create( data.Class )
-        if not IsValid( ent ) then return end
+    WriteUInt( count, 5 )
 
-        ent:SetPos( data.Pos )
-        ent:SetAngles( data.Angle )
-        ent:Spawn()
-        ent:Activate()
+    for i = 1, count do
+        local s = strokes[i]
 
-        ply:AddCount( "gpaint_boards", ent )
+        -- start pos
+        WriteUInt( s[1], 10 )
+        WriteUInt( s[2], 10 )
 
-        -- set the screen owner
-        ent:SetGPaintOwner( ply )
+        -- end pos
+        WriteUInt( s[3], 10 )
+        WriteUInt( s[4], 10 )
 
-        -- tell the screen owner to subscribe
-        timer.Simple( 1, function()
-            if IsValid( ply ) and IsValid( ent ) then
-                GPaint.network.StartCommand( GPaint.network.SUBSCRIBE, ent )
-                net.Send( ply )
-            end
-        end )
+        -- thickness
+        WriteUInt( s[5], 8 )
 
-        return ent
+        -- r, g, b
+        WriteUInt( s[6], 8 )
+        WriteUInt( s[7], 8 )
+        WriteUInt( s[8], 8 )
     end
 end
 
+local ReadUInt = net.ReadUInt
+
+function GPaint.ReadStrokes()
+    local count = math.min( ReadUInt( 5 ), GPaint.MAX_STROKES )
+    if count < 1 then return {} end
+
+    local strokes = {}
+
+    for i = 1, count do
+        strokes[i] = {
+            -- start pos
+            ReadUInt( 10 ),
+            ReadUInt( 10 ),
+
+            -- end pos
+            ReadUInt( 10 ),
+            ReadUInt( 10 ),
+
+            -- thickness
+            ReadUInt( 8 ),
+
+            -- r, g, b
+            ReadUInt( 8 ),
+            ReadUInt( 8 ),
+            ReadUInt( 8 )
+        }
+    end
+
+    return strokes
+end
+
+function GPaint.WriteWhitelist( whitelist )
+    -- `whitelist` is a key-value table, convert to a array
+    local data = {}
+
+    for id, _ in pairs( whitelist ) do
+        data[#data + 1] = id
+    end
+
+    data = util.Compress( util.TableToJSON( data ) )
+
+    WriteUInt( #data, 16 )
+    net.WriteData( data, #data )
+end
+
+function GPaint.ReadWhitelist( output )
+    local len = ReadUInt( 16 )
+    local data = net.ReadData( len )
+
+    data = util.JSONToTable( util.Decompress( data ) )
+    if not data then return end
+
+    table.Empty( output )
+
+    -- `data` is a array, convert to a key-value table
+    for _, id in ipairs( data ) do
+        output[id] = true
+    end
+end
+
+if SERVER then
+    -- Shared files
+    include( "gpaint/sh_stream.lua" )
+    AddCSLuaFile( "gpaint/sh_stream.lua" )
+
+    -- Server files
+    include( "gpaint/sv_main.lua" )
+    include( "gpaint/sv_network.lua" )
+
+    -- Client files
+    AddCSLuaFile( "gpaint/cl_main.lua" )
+    AddCSLuaFile( "gpaint/cl_network.lua" )
+    AddCSLuaFile( "gpaint/cl_screen.lua" )
+    AddCSLuaFile( "gpaint/cl_menu.lua" )
+end
+
 if CLIENT then
-    include( "gpaint/sh_net.lua" )
-    include( "gpaint/cl_init.lua" )
+    -- Shared files
+    include( "gpaint/sh_stream.lua" )
+
+    -- Client files
+    include( "gpaint/cl_main.lua" )
+    include( "gpaint/cl_network.lua" )
     include( "gpaint/cl_screen.lua" )
     include( "gpaint/cl_menu.lua" )
 end
