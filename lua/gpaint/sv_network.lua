@@ -66,7 +66,7 @@ local function FulfillRequest( id, ent, data )
 
     -- Send the image data to only one target
     GPaint.Transfer( data, { gpaint_entId = ent:EntIndex() }, function( err )
-        if err then GPaint.PrintF( "Failed to stream image data: %s", err ) end
+        if err then GPaint.PrintF( "Failed to stream request data: %s", err ) end
     end, targetPly )
 end
 
