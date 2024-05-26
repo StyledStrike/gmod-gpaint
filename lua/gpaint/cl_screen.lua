@@ -1,175 +1,110 @@
-local dimensions = {
-    w = 1024, h = 576
-}
+local SCREEN_W = 1024
+local SCREEN_H = 576
+local RT_SIZE = GPaint.RT_SIZE
 
-local screenQuad = {
-    Vector( 0, 0, 0 ),
-    Vector( dimensions.w, 0, 0 ),
-    Vector( dimensions.w, dimensions.h, 0 ),
-    Vector( 0, dimensions.h, 0 )
-}
-
-local rtMaterial = CreateMaterial(
-    "mat_gpaint_rt",
-    "UnlitGeneric",
-    {
-        ["$nolod"] = 1,
-        ["$ignorez"] = 1,
-        ["$vertexcolor"] = 1,
-        ["$vertexalpha"] = 1
-    }
-)
-
-local rtResolution = GPaint.rtResolution
+local Floor = math.floor
 
 -- Get a position on the render target relative to a position on the screen
-local function screenPosToRT( x, y )
+local function ScreenToRT( x, y )
     return
-        math.floor( ( x / dimensions.w ) * rtResolution ),
-        math.floor( ( y / dimensions.h ) * rtResolution )
+        Floor( ( x / SCREEN_W ) * RT_SIZE ),
+        Floor( ( y / SCREEN_H ) * RT_SIZE )
 end
 
 -- Get a position on the screen relative to a position on the render target
-local function rtPosToScreen( x, y )
+local function RTToScreen( x, y )
     return
-        math.floor( ( x / rtResolution ) * dimensions.w ),
-        math.floor( ( y / rtResolution ) * dimensions.h )
+        Floor( ( x / RT_SIZE ) * SCREEN_W ),
+        Floor( ( y / RT_SIZE ) * SCREEN_H )
 end
 
--- based on a example from https://wiki.facepunch.com/gmod/surface.DrawPoly
-local function drawFilledCircle( x, y, radius )
-    local cir = { { x = x, y = y } }
-    local idx = 1
+local DrawFilledCircle = GPaint.DrawFilledCircle
+local DrawFilledLine = GPaint.DrawFilledLine
 
-    -- find the best "quality" for this circle
-    local seg = math.Clamp( math.floor( radius / 2 ) * 4, 16, 64 )
-
-    for i = 0, seg do
-        local a = math.rad( ( i / seg ) * -360 )
-
-        idx = idx + 1
-        cir[idx] = {
-            x = x + math.sin( a ) * radius,
-            y = y + math.cos( a ) * radius
-        }
-    end
-
-    cir[idx + 1] = {
-        x = x + math.sin( 0 ) * radius,
-        y = y + math.cos( 0 ) * radius
-    }
-
-    surface.DrawPoly( cir )
-end
-
--- Draws a filled line with the specified thickness. (thanks to Wiremod"s EGP code)
--- https://github.com/wiremod/wire/blob/master/lua/entities/gmod_wire_egp/lib/egplib/usefulfunctions.lua#L253
-local function drawFilledLine( x1, y1, x2, y2, thickness )
-    if thickness <= 1 then
-        surface.DrawLine( x1, y1, x2, y2 )
-        return
-    end
-
-    local radius = thickness * 0.5
-
-    if x1 == x2 and y1 == y2 then
-        drawFilledCircle( x1, y1, radius )
-
-        return
-    end
-
-    -- start & end points
-    drawFilledCircle( x1, y1, radius )
-    drawFilledCircle( x2, y2, radius )
-
-    -- fake a line by drawing a rotated rectange
-
-    -- calculate position
-    local x3 = ( x1 + x2 ) * 0.5
-    local y3 = ( y1 + y2 ) * 0.5
-
-    -- calculate width & angle
-    local w = math.sqrt( ( x2 - x1 ) ^ 2 + ( y2 - y1 ) ^ 2 )
-    local angle = math.deg( math.atan2( y1 - y2, x2 - x1 ) )
-    if w < 1 then w = 1 end
-
-    draw.NoTexture()
-    surface.DrawTexturedRectRotated( x3, y3, w, thickness, angle )
-end
+local L = language.GetPhrase
+local RealTime = RealTime
 
 --[[
     This is a sort-of class to handle the screen
     you see in-game for each GPaint entity.
 ]]
-local Screen = {}
+local Screen = GPaint.Screen or {}
 
+GPaint.Screen = Screen
 Screen.__index = Screen
 
-GPaint.screens = GPaint.screens or {}
-
--- Update existing screens on autorefresh
-if GPaint.screens then
-    for idx, scr in pairs( GPaint.screens ) do
-        setmetatable( scr, Screen )
-        GPaint.screens[idx] = scr
-    end
-end
-
-function GPaint.CreateScreen( entity )
-    for _, scr in pairs( GPaint.screens ) do
-        if scr.entity == entity then return end
-    end
+function GPaint.CreateScreen( ent )
+    local id = ent:EntIndex()
+    if GPaint.screens[id] then return end
 
     local index, rt = GPaint.AllocateRT()
 
-    local scr = {
+    local s = setmetatable( {
+        id = id,
         rt = rt,
-        rt_index = index,
-        entity = entity
-    }
+        rtIndex = index,
+        entity = ent,
 
-    GPaint.screens[index] = scr
-    setmetatable( scr, Screen )
+        isFocused = false,
+        cursorState = 0,
+        cursorX = nil,
+        cursorY = nil,
 
-    scr:Clear()
-    scr.menu = GPaint.CreateMenu( scr )
-    scr.menu:SetTitle()
+        penColor = Color( 255, 0, 0 ),
+        penThickness = 4,
 
-    scr.cursorState = 0
-    scr.cursorX = nil
-    scr.cursorY = nil
+        lastPenX = 0,
+        lastPenY = 0,
+        eraserMode = false,
 
-    scr.penColor = Color( 255, 0, 0 )
-    scr.penThickness = 4
+        strokeDelay = 0,
+        strokeQueue = {},
 
-    scr.lastPenX = 0
-    scr.lastPenY = 0
-    scr.eraserMode = false
+        transmitDelay = 0,
+        transmitQueue = {},
 
-    scr.strokeDelay = 0
-    scr.strokeQueue = {}
+        isLoading = true,
+        isSubscribed = false
+    }, Screen )
 
-    scr.transmitDelay = 0
-    scr.transmitQueue = {}
+    s:Clear()
+    s.menu = GPaint.CreateMenu( s )
+    s.menu:SetTitle()
 
-    scr.isBusy = true
-    scr.shouldSubscribe = false
-    scr.wantsToSubscribe = game.SinglePlayer()
+    GPaint.screens[id] = s
+    GPaint.UpdateScreenCount()
+
+    if game.SinglePlayer() then
+        s.isSubscribed = true
+        s.isLoading = false
+    end
 end
 
---[[
-    Screen "class"
-]]
+function Screen:Remove()
+    self.menu:Remove()
 
-local RealTime = RealTime
-local renderCapture = render.Capture
-local langGet = language.GetPhrase
-local network = GPaint.network
+    GPaint.FreeRT( self.rtIndex )
+    GPaint.UpdateScreenCount()
+end
 
-function Screen:Cleanup()
-    GPaint.FreeRT( self.rt_index )
+function Screen:Subscribe()
+    if self.isSubscribed then return end
 
-    self.menu:Cleanup()
+    self.isSubscribed = false
+    self.isLoading = true
+
+    GPaint.StartCommand( GPaint.SUBSCRIBE, self.entity )
+    net.SendToServer()
+end
+
+function Screen:Unsubscribe()
+    if not self.isSubscribed then return end
+
+    self.isSubscribed = false
+    self.isLoading = false
+
+    GPaint.StartCommand( GPaint.UNSUBSCRIBE, self.entity )
+    net.SendToServer()
 end
 
 function Screen:Clear( transmit )
@@ -179,80 +114,79 @@ function Screen:Clear( transmit )
     self.transmitQueue = {}
 
     if transmit and not game.SinglePlayer() then
-        network.StartCommand( network.CLEAR, self.entity )
+        GPaint.StartCommand( GPaint.CLEAR, self.entity )
         net.SendToServer()
     end
 end
 
 function Screen:SetPenColor( r, g, b )
     self.penColor = Color( r, g, b )
-    self.menu:SetColor( self.penColor )
+    self.menu:SetPenColor( self.penColor )
 end
 
-function Screen:OnShow()
-    self.shouldSubscribe = true
+function Screen:IsInside( x, y )
+    if not x then return false end
+    if x < 0 or x > SCREEN_W then return false end
+    if y < 0 or y > SCREEN_H then return false end
+
+    return true
 end
 
-function Screen:OnHide()
-    network.StartCommand( network.UNSUBSCRIBE, self.entity )
-    net.SendToServer()
-
-    self.hint = nil
-end
-
--- called from the menu when the user opened a file
-function Screen:OnOpenImage( relativePath )
+--- Called from the menu when the user opened a file.
+--- `path` is relative to the `garrysmod\data` directory.
+function Screen:OnOpenImage( path )
     if not self.entity:CanPlayerDraw( LocalPlayer() ) then return end
 
-    self.relativeFilePath = relativePath
-    self.isDirty = false
-
-    self.menu:SetTitle( self.relativeFilePath )
-    self:RenderImageFile( "data/gpaint/" .. relativePath, true )
+    self.path = path
+    self.menu.isUnsaved = false
+    self.menu:SetTitle( path )
+    self:RenderImageFile( path, true )
 end
 
 function Screen:OnPenDrag( x, y, reset, color )
-    if self.isBusy then return end
+    if self.isLoading then return end
 
     if reset then
         self.lastPenX = x
         self.lastPenY = y
     end
 
-    if RealTime() > self.strokeDelay then
-        local stroke = {
-            self.lastPenX,
-            self.lastPenY,
-            x, y,
-            self.penThickness,
-            color.r, color.g, color.b
-        }
+    if RealTime() < self.strokeDelay then return end
 
-        self.strokeQueue[#self.strokeQueue + 1] = stroke
-        self.transmitQueue[#self.transmitQueue + 1] = stroke
+    self.menu.isUnsaved = true
+    self.strokeDelay = RealTime() + 0.03
 
-        self.lastPenX = x
-        self.lastPenY = y
-        self.strokeDelay = RealTime() + 0.03
-        self.isDirty = true
-    end
+    local stroke = {
+        self.lastPenX,
+        self.lastPenY,
+        x, y,
+        self.penThickness,
+        color.r, color.g, color.b
+    }
+
+    self.lastPenX = x
+    self.lastPenY = y
+
+    -- Render this stoke next frame
+    self.strokeQueue[#self.strokeQueue + 1] = stroke
+
+    if game.SinglePlayer() then return end
+
+    -- Transmit the stroke soon
+    self.transmitQueue[#self.transmitQueue + 1] = stroke
 end
 
 function Screen:OnCursor( x, y )
-    if not self.wantsToSubscribe then
-        if input.IsKeyDown( KEY_E ) then
-            self.wantsToSubscribe = true
-            self.shouldSubscribe = true
-        end
-
-        return
+    if not self.isSubscribed and not self.isLoading and input.IsKeyDown( KEY_E ) then
+        self:Subscribe()
     end
 
+    if self.isLoading then return end
     if not self.entity:CanPlayerDraw( LocalPlayer() ) then return end
 
     if not self.hint then
         self.hint = true
-        notification.AddLegacy( langGet( "gpaint.usage_hint" ), NOTIFY_HINT, 4 )
+        notification.AddLegacy( L"gpaint.usage_hint", NOTIFY_HINT, 4 )
     end
 
     local cursorLeft = input.IsMouseDown( MOUSE_LEFT )
@@ -271,7 +205,7 @@ function Screen:OnCursor( x, y )
         resetPen = newState == 1
     end
 
-    local penX, penY = screenPosToRT( x, y )
+    local penX, penY = ScreenToRT( x, y )
 
     if newState == 0 then
         self.isCursorOnMenu = self.menu.isOpen and x < 250
@@ -291,13 +225,13 @@ function Screen:OnCursor( x, y )
             self:OnPenDrag( penX, penY, resetPen, self.eraserMode and color_black or self.penColor )
         end
 
-        self.cursorX, self.cursorY = rtPosToScreen( penX, penY )
+        self.cursorX, self.cursorY = RTToScreen( penX, penY )
     end
 
-    -- color picker
-    self.pickerMode = input.IsKeyDown( KEY_R )
+    -- Color picker
+    self.usingColorPicker = input.IsKeyDown( KEY_R )
 
-    if self.pickerMode then
+    if self.usingColorPicker then
         self:RenderToRT( function()
             render.CapturePixels()
             local r, g, b = render.ReadPixel( penX, penY )
@@ -305,6 +239,7 @@ function Screen:OnCursor( x, y )
         end )
     end
 
+    -- Menu toggle
     if LocalPlayer():KeyDown( IN_USE ) then
         if not self.holdingMenuKey then
             self.holdingMenuKey = true
@@ -330,60 +265,75 @@ function Screen:OnUnfocus()
     self.eraserMode = false
 end
 
+local SetDrawColor = surface.SetDrawColor
+
 function Screen:Think()
-    if self.wantsToSubscribe and self.shouldSubscribe then
-        self.shouldSubscribe = false
-
-        network.StartCommand( network.SUBSCRIBE, self.entity )
-        net.SendToServer()
-    end
-
-    -- draws all strokes from the queue into the render target
-    if not self.isBusy and self.strokeQueue[1] then
+    -- Draws all strokes from the queue into the render target
+    if not self.isLoading and self.strokeQueue[1] then
         self:RenderToRT( function()
             render.SetColorMaterial()
             draw.NoTexture()
 
             for _, st in ipairs( self.strokeQueue ) do
-                surface.SetDrawColor( st[6], st[7], st[8], 255 )
-                drawFilledLine( st[1], st[2], st[3], st[4], st[5] )
+                SetDrawColor( st[6], st[7], st[8], 255 )
+                DrawFilledLine( st[1], st[2], st[3], st[4], st[5] )
             end
         end )
 
         table.Empty( self.strokeQueue )
     end
 
-    -- send pen strokes over the network 
+    -- Send pen strokes over the network 
     if self.transmitQueue[1] and RealTime() > self.transmitDelay then
-        network.StartCommand( network.PEN_STROKES, self.entity )
-        network.WriteStrokes( self.transmitQueue )
+        GPaint.StartCommand( GPaint.PEN_STROKES, self.entity )
+        GPaint.WriteStrokes( self.transmitQueue )
         net.SendToServer()
 
         table.Empty( self.transmitQueue )
         self.transmitDelay = RealTime() + 0.3
     end
 
-    if self.isBusy and self.menu.isOpen then
+    if self.isLoading and self.menu.isOpen then
         self.menu:Close()
     end
 end
 
-function Screen:Render()
-    rtMaterial:SetTexture( "$basetexture", self.rt )
+local screenQuad = {
+    Vector( 0, 0, 0 ),
+    Vector( SCREEN_W, 0, 0 ),
+    Vector( SCREEN_W, SCREEN_H, 0 ),
+    Vector( 0, SCREEN_H, 0 )
+}
 
-    render.SetMaterial( rtMaterial )
+local screenMat = CreateMaterial(
+    "mat_gpaint_rt",
+    "UnlitGeneric",
+    {
+        ["$nolod"] = 1,
+        ["$ignorez"] = 1,
+        ["$vertexcolor"] = 1,
+        ["$vertexalpha"] = 1
+    }
+)
+
+local DrawRect = surface.DrawRect
+
+function Screen:Render()
+    screenMat:SetTexture( "$basetexture", self.rt )
+
+    render.SetMaterial( screenMat )
     render.DrawQuad( screenQuad[1], screenQuad[2], screenQuad[3], screenQuad[4] )
 
     render.SetColorMaterial()
     draw.NoTexture()
 
-    self.menu:Render( dimensions.h )
+    self.menu:Render( SCREEN_H )
 
     if self.busyOverlay then
-        surface.SetDrawColor( 0, 0, 0, self.busyOverlay * 255 )
-        surface.DrawRect( 0, 0, dimensions.w, dimensions.h )
+        SetDrawColor( 0, 0, 0, self.busyOverlay * 255 )
+        DrawRect( 0, 0, SCREEN_W, SCREEN_H )
 
-        if not self.isBusy then
+        if not self.isLoading then
             self.busyOverlay = self.busyOverlay - FrameTime() * 3
 
             if self.busyOverlay < 0 then
@@ -392,79 +342,97 @@ function Screen:Render()
         end
     end
 
-    if self.isBusy then
+    if self.isLoading then
         surface.SetFont( "CloseCaption_Bold" )
 
-        local msg = langGet( "gpaint.loading" )
-        local tw, th = surface.GetTextSize( msg )
+        local text = L"gpaint.loading"
+        local tw, th = surface.GetTextSize( text )
 
-        local x = ( dimensions.w * 0.5 ) - ( tw * 0.5 )
-        local y = ( dimensions.h * 0.5 ) - ( th * 0.5 )
+        local x = ( SCREEN_W * 0.5 ) - ( tw * 0.5 )
+        local y = ( SCREEN_H * 0.5 ) - ( th * 0.5 )
 
-        surface.SetDrawColor( 77, 49, 128, 200 )
-        surface.DrawRect( x - 8, y - 8, tw + 16, th + 16 )
+        SetDrawColor( 77, 49, 128, 200 )
+        DrawRect( x - 8, y - 8, tw + 16, th + 16 )
 
         surface.SetTextColor( 255, 255, 255, math.abs( math.sin( RealTime() * 8 ) ) * 255 )
         surface.SetTextPos( x, y )
-        surface.DrawText( msg )
+        surface.DrawText( text )
 
         self.busyOverlay = 1
     end
 
-    if not self.wantsToSubscribe then
+    if not self.isSubscribed and not self.isLoading then
         surface.SetFont( "CloseCaption_Bold" )
 
-        local msg = langGet( "gpaint.enable_request" )
-        local tw, th = surface.GetTextSize( msg )
+        local text = L"gpaint.enable_request"
+        local tw, th = surface.GetTextSize( text )
 
-        local x = ( dimensions.w * 0.5 ) - ( tw * 0.5 )
-        local y = ( dimensions.h * 0.5 ) - ( th * 0.5 )
+        local x = ( SCREEN_W * 0.5 ) - ( tw * 0.5 )
+        local y = ( SCREEN_H * 0.5 ) - ( th * 0.5 )
 
-        surface.SetDrawColor( 40, 40, 40, 255 )
-        surface.DrawRect( x - 8, y - 8, tw + 16, th + 16 )
+        SetDrawColor( 40, 40, 40, 255 )
+        DrawRect( x - 8, y - 8, tw + 16, th + 16 )
 
         surface.SetTextColor( 255, 255, 255, 255 )
         surface.SetTextPos( x, y )
-        surface.DrawText( msg )
+        surface.DrawText( text )
     end
 
     if not self.cursorX then return end
 
     if self.isCursorOnMenu and not self.menu:IsDraggingItem() then
-        -- draw a green dot
-        surface.SetDrawColor( 50, 50, 50, 220 )
-        drawFilledCircle( self.cursorX, self.cursorY, 5 )
+        -- Draw a green dot
+        SetDrawColor( 50, 50, 50, 220 )
+        DrawFilledCircle( self.cursorX, self.cursorY, 5 )
 
-        surface.SetDrawColor( 0, 255, 0, 255 )
-        drawFilledCircle( self.cursorX, self.cursorY, 4 )
+        SetDrawColor( 0, 255, 0, 255 )
+        DrawFilledCircle( self.cursorX, self.cursorY, 4 )
     else
-        -- draw the + cursor
+        -- Draw a "+" sign
         local color = self.eraserMode and color_black or self.penColor
 
-        local w = ( self.penThickness / rtResolution ) * dimensions.w * 0.5
-        local h = ( self.penThickness / rtResolution ) * dimensions.h * 0.5
+        local w = ( self.penThickness / RT_SIZE ) * SCREEN_W * 0.5
+        local h = ( self.penThickness / RT_SIZE ) * SCREEN_H * 0.5
         local x = self.cursorX
         local y = self.cursorY
 
-        surface.SetDrawColor( color.r, color.g, color.b, 255 )
+        SetDrawColor( color.r, color.g, color.b, 255 )
         surface.DrawLine( x - w, y, x + w, y )
         surface.DrawLine( x, y - h, x, y + h )
     end
 
-    if self.pickerMode then
+    -- Draw a circle with the current color from the color picker
+    if self.usingColorPicker then
         local color = self.penColor
         local x = self.cursorX
         local y = self.cursorY
 
-        surface.SetDrawColor( 50, 50, 50, 220 )
-        drawFilledCircle( x, y, 22 )
+        SetDrawColor( 50, 50, 50, 220 )
+        DrawFilledCircle( x, y, 22 )
 
-        surface.SetDrawColor( color.r, color.g, color.b, 255 )
-        drawFilledCircle( x, y, 20 )
+        SetDrawColor( color.r, color.g, color.b, 255 )
+        DrawFilledCircle( x, y, 20 )
     end
 end
 
--- render stuff into the render target using the callback function
+--- Captures the render target's contents and returns the image data.
+function Screen:CaptureRT( format )
+    render.SetRenderTarget( self.rt )
+
+    local data = render.Capture( {
+        format = format or "png",
+        x = 0, y = 0,
+        w = RT_SIZE,
+        h = RT_SIZE,
+        alpha = false
+    } )
+
+    render.SetRenderTarget()
+
+    return data
+end
+
+--- Render stuff into the render target using `func`.
 function Screen:RenderToRT( func )
     render.PushRenderTarget( self.rt )
     cam.Start2D()
@@ -476,72 +444,179 @@ function Screen:RenderToRT( func )
     render.PopRenderTarget()
 end
 
--- loads and renders a image file to the render target
+--- Loads and renders a image file on the render target.
+--- `path` is relative to the `garrysmod\data` directory.
 function Screen:RenderImageFile( path, transmit )
+    local entId = self.entity:EntIndex()
+
     self:RenderToRT( function()
-        local imageMaterial = Material( "../" .. path )
+        local imageMaterial = Material( "../data/" .. path )
         imageMaterial:GetTexture( "$basetexture" ):Download()
 
         render.SetMaterial( imageMaterial )
         render.DrawQuad(
             Vector( 0, 0, 0 ),
-            Vector( rtResolution, 0, 0 ),
-            Vector( rtResolution, rtResolution, 0 ),
-            Vector( 0, rtResolution, 0 )
+            Vector( RT_SIZE, 0, 0 ),
+            Vector( RT_SIZE, RT_SIZE, 0 ),
+            Vector( 0, RT_SIZE, 0 )
         )
 
         if game.SinglePlayer() then
             self.busyOverlay = 1
-            self.isBusy = false
+            self.isLoading = false
 
             return
         end
 
         if transmit then
-            self.isBusy = true
+            self.isLoading = true
+
             local data = self:CaptureRT( "jpg" )
 
-            if network.USE_EXPRESS then
-                express.Send(
-                    "gpaint.transfer",
-                    {
-                        ent = self.entity,
-                        image = data
-                    },
-                    function() self.isBusy = false end
-                )
+            GPaint.Transfer( data, { gpaint_entId = entId }, function( err )
+                self.isLoading = false
 
-                return
-            end
-
-            network.StartCommand( network.BROADCAST_DATA, self.entity )
-            network.WriteImage( data, function() self.isBusy = false end )
-            net.SendToServer()
+                if err then
+                    GPaint.PrintF( "Failed to stream image file: %s (%s)", path, err )
+                else
+                    GPaint.PrintF( "Streamed image file to the server." )
+                end
+            end )
         end
     end )
 end
 
--- captures the render target, and returns the image data
-function Screen:CaptureRT( format )
-    render.SetRenderTarget( self.rt )
+--[[
+    You might ask why am I using a `PreDrawHUD` hook here
+    instead of using `ENT:Draw` from the screen entity itself.
 
-    local data = renderCapture{
-        format = format or "png",
-        x = 0, y = 0,
-        w = rtResolution,
-        h = rtResolution,
-        alpha = false
-    }
+    It's (mostly) because HDR does not affect stuff drawn on this hook.
+    In some occasions it was very hard to see the screen on dark/bright rooms...
+]]
 
-    render.SetRenderTarget()
+local focusedId, localPly
 
-    return data
+local function ProcessScreen( s, isAiming )
+    cam.PushModelMatrix( s.entity.screenMatrix )
+    render.OverrideDepthEnable( true, false )
+    render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD )
+
+    render.PushFilterMag( TEXFILTER.LINEAR )
+    render.PushFilterMin( TEXFILTER.LINEAR )
+
+    s:Render()
+
+    render.PopFilterMin()
+    render.PopFilterMag()
+
+    render.OverrideBlend( false )
+    render.OverrideDepthEnable( false )
+    cam.PopModelMatrix()
+
+    local x, y
+
+    if isAiming then
+        x, y = s.entity:GetCursorPos( localPly )
+
+        if not s:IsInside( x, y ) then
+            x = nil
+        end
+    end
+
+    if x then
+        s.isFocused = true
+        s:OnCursor( x, y )
+        focusedId = s.id
+
+    elseif s.isFocused then
+        s.isFocused = false
+        s:OnUnfocus()
+    end
 end
 
-function Screen:IsInside( x, y )
-    if not x then return false end
-    if x < 0 or x > dimensions.w then return false end
-    if y < 0 or y > dimensions.h then return false end
-
-    return true
+local function GetMaxRenderDistance()
+    local cvar = GetConVar( "gpaint_max_render_distance" )
+    local value = cvar and cvar:GetInt() or 3000
+    return value * value
 end
+
+local IsValid = IsValid
+local LocalPlayer = LocalPlayer
+
+local screens = GPaint.screens
+local focusCooldown = 0
+
+function GPaint.DrawScreens()
+    focusedId = nil
+    localPly = LocalPlayer()
+
+    local eyePos = localPly:GetShootPos()
+    local maxDistance = GetMaxRenderDistance()
+
+    -- Use the trace system to detect
+    -- which screen should receive input
+    local aimEntity
+
+    if RealTime() > focusCooldown and not vgui.CursorVisible() then
+        local tr = util.TraceLine{
+            start = eyePos,
+            endpos = eyePos + localPly:GetAimVector() * 200,
+            ignoreworld = true,
+            filter = localPly
+        }
+
+        aimEntity = tr.Entity
+    end
+
+    -- Draw the screens
+    cam.Start3D()
+
+    for id, s in pairs( screens ) do
+        local ent = s.entity
+
+        if IsValid( ent ) then
+            s:Think()
+
+            if not ent:IsDormant() and eyePos:DistToSqr( ent:GetPos() ) < maxDistance then
+                ProcessScreen( s, ent == aimEntity )
+            end
+        else
+            s:Remove()
+            screens[id] = nil
+        end
+    end
+
+    cam.End3D()
+end
+
+function GPaint.UpdateScreenCount()
+    local count = table.Count( screens )
+
+    if count == 0 then
+        hook.Remove( "PreDrawHUD", "GPaint.DrawScreens" )
+    else
+        hook.Add( "PreDrawHUD", "GPaint.DrawScreens", GPaint.DrawScreens )
+    end
+end
+
+GPaint.UpdateScreenCount()
+
+-- Block interaction with the screens if we hold stuff with the physgun
+hook.Add( "PhysgunPickup", "GPaint.PreventFocusing", function( ply )
+    if ply == LocalPlayer() then focusCooldown = RealTime() + 999 end
+end )
+
+hook.Add( "PhysgunDrop", "GPaint.AllowFocusing", function( ply )
+    if ply == LocalPlayer() then focusCooldown = RealTime() + 0.7 end
+end )
+
+-- Blocks some binds when focusing on any screen
+local blockBinds = {
+    ["+attack"] = true,
+    ["+attack2"] = true,
+    ["+reload"] = true
+}
+
+hook.Add( "PlayerBindPress", "GPaint.BlockBindsWhenFocused", function( _, bind )
+    if blockBinds[bind] and focusedId then return true end
+end )

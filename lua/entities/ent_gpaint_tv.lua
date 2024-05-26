@@ -7,7 +7,7 @@ ENT.PrintName = "GPaint (TV)"
 ENT.Category = "GPaint"
 ENT.Spawnable = true
 
-ENT.model = "models/props_phx/rt_screen.mdl"
+ENT.ScreenModel = "models/props_phx/rt_screen.mdl"
 ENT.spawnAngleOffset = Angle( -90, 180, 0 )
 
 if SERVER then
@@ -19,7 +19,7 @@ if CLIENT then
 
     list.Set(
         "GPaintScreenOffsets",
-        ENT.model,
+        ENT.ScreenModel,
         {
             pos = Vector( 6.1, -28.1, 35.45 ),
             ang = Angle( 180, 270, 90 ),

@@ -7,7 +7,7 @@ ENT.PrintName = "GPaint (3x5)"
 ENT.Category = "GPaint"
 ENT.Spawnable = true
 
-ENT.model = "models/hunter/plates/plate3x5.mdl"
+ENT.ScreenModel = "models/hunter/plates/plate3x5.mdl"
 
 if SERVER then
     duplicator.RegisterEntityClass( "ent_gpaint_3x5", GPaint.MakeScreenSpawner, "Data" )
@@ -18,7 +18,7 @@ if CLIENT then
 
     list.Set(
         "GPaintScreenOffsets",
-        ENT.model,
+        ENT.ScreenModel,
         {
             pos = Vector( -71, 118.5, -1.6 ),
             ang = Angle( 0, 270, 0 ),

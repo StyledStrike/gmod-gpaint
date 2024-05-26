@@ -12,16 +12,18 @@ ENT.Instructions = "Aim at it, then press ATTACK to paint"
 ENT.Spawnable = true
 ENT.AdminOnly = false
 
-ENT.model = "models/hunter/plates/plate2x3.mdl"
+ENT.ScreenModel = "models/hunter/plates/plate2x3.mdl"
 
 function ENT:CanPlayerDraw( ply )
     if game.SinglePlayer() then return true end
 
-    if ply:SteamID() == self:GetGPaintOwnerSteamID() then
+    local id = ply:SteamID()
+
+    if id == self:GetGPaintOwnerSteamID() then
         return true
     end
 
-    if self.GPaintWhitelist[ply:SteamID()] then
+    if self.GPaintWhitelist[id] then
         return true
     end
 
@@ -51,12 +53,9 @@ properties.Add( "gpaint.turnoff", {
     end,
 
     Action = function( _, ent )
-        for _, scr in pairs( GPaint.screens ) do
-            if scr.entity == ent then
-                scr.wantsToSubscribe = false
-                scr:Clear()
-                scr:OnHide()
-            end
+        local screen = GPaint.GetScreenByEntity( ent )
+        if screen then
+            screen:Unsubscribe()
         end
     end
 } )
