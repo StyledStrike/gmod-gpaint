@@ -232,8 +232,8 @@ local function ValidateMetadata( metadata, ply )
     if not IsGPaintScreen( ent ) then return false end
     if not ent:CanPlayerDraw( ply ) then return false end
 
-    -- Only allow the owner to send screen data
-    if ply:SteamID() ~= ent:GetGPaintOwnerSteamID() then return false end
+    -- Only allow whitelisted players to send screen data
+    if not ent:CanPlayerDraw( ply ) then return false end
 
     -- If there's no requestId then just accept it
     local requestId = metadata.gpaint_requestId
