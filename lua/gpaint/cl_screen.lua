@@ -63,7 +63,7 @@ function GPaint.CreateScreen( ent )
         transmitDelay = 0,
         transmitQueue = {},
 
-        isLoading = true,
+        isLoading = false,
         isSubscribed = false
     }, Screen )
 
@@ -90,7 +90,7 @@ end
 function Screen:Subscribe()
     if self.isSubscribed then return end
 
-    self.isSubscribed = false
+    self.isSubscribed = true
     self.isLoading = true
 
     GPaint.StartCommand( GPaint.SUBSCRIBE, self.entity )

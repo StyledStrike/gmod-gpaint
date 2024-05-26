@@ -49,10 +49,7 @@ local commands = {
 
     [GPaint.SET_LOADING] = function( screen )
         screen.isLoading = net.ReadBool()
-
-        if not screen.isLoading then
-            screen.isSubscribed = true
-        end
+        screen.isSubscribed = true
     end,
 
     [GPaint.PEN_STROKES] = function( screen )
