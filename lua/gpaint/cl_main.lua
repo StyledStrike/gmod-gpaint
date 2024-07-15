@@ -163,6 +163,7 @@ local DrawFilledCircle = GPaint.DrawFilledCircle
 function GPaint.DrawFilledLine( x1, y1, x2, y2, thickness )
     if thickness <= 1 then
         surface.DrawLine( x1, y1, x2, y2 )
+        surface.DrawRect( x1, y1, 1, 1 )
         return
     end
 
