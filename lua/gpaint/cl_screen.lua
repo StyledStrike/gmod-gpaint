@@ -496,22 +496,33 @@ end
 
 local focusedId, localPly
 
-local function ProcessScreen( s, isAiming )
-    cam.PushModelMatrix( s.entity.screenMatrix )
-    render.OverrideDepthEnable( true, false )
-    render.OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD )
+local OverrideDepthEnable = render.OverrideDepthEnable
+local OverrideBlend = render.OverrideBlend
 
-    render.PushFilterMag( TEXFILTER.LINEAR )
-    render.PushFilterMin( TEXFILTER.LINEAR )
+local PushModelMatrix = cam.PushModelMatrix
+local PopModelMatrix = cam.PopModelMatrix
+
+local PushFilterMag = render.PushFilterMag
+local PushFilterMin = render.PushFilterMin
+local PopFilterMin = render.PopFilterMin
+local PopFilterMag = render.PopFilterMag
+
+local function ProcessScreen( s, isAiming )
+    PushModelMatrix( s.entity.screenMatrix )
+    OverrideDepthEnable( true, false )
+    OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD )
+
+    PushFilterMag( TEXFILTER.LINEAR )
+    PushFilterMin( TEXFILTER.LINEAR )
 
     s:Render()
 
-    render.PopFilterMin()
-    render.PopFilterMag()
+    PopFilterMin()
+    PopFilterMag()
 
-    render.OverrideBlend( false )
-    render.OverrideDepthEnable( false )
-    cam.PopModelMatrix()
+    OverrideBlend( false )
+    OverrideDepthEnable( false )
+    PopModelMatrix()
 
     local x, y
 
