@@ -435,13 +435,32 @@ function Menu:OnClickOpen()
 
     self.frameFileBrowser = frame
 
+    local panelPath = vgui.Create( "DPanel", frame )
+    panelPath:Dock( TOP )
+    panelPath:DockPadding( 8, 4, 8, 4 )
+
+    panelPath.Paint = function( _, w, h )
+        surface.SetDrawColor( 20, 20, 20 )
+        surface.DrawRect( 0, 0, w, h )
+    end
+
+    local labelPath = vgui.Create( "DLabel", panelPath )
+    labelPath:SetText( "data/" )
+    labelPath:SetTextColor( color_white )
+    labelPath:SizeToContents()
+    labelPath:Dock( FILL )
+
+    panelPath:SizeToChildren( false, true )
+    panelPath:SetTall( panelPath:GetTall() + 8 )
+
     local browser = vgui.Create( "DFileBrowser", frame )
     browser:Dock( FILL )
     browser:SetModels( true )
     browser:SetPath( "GAME" )
     browser:SetBaseFolder( "data" )
-    browser:SetCurrentFolder( "gpaint" )
     browser:SetOpen( true )
+    browser:SetCurrentFolder( "gpaint" )
+
     browser.thumbnailQueue = {}
 
     function browser.OnSelect( _, path )
@@ -490,6 +509,10 @@ function Menu:OnClickOpen()
     --- Custom version of ShowFolder from DFileBrowser,
     --- modified to show icons instead of a list of names.
     function browser.ShowFolder( s, path )
+        if path then
+            labelPath:SetText( path )
+        end
+
         if not IsValid( s.Files ) then return end
 
         s.Files:Clear()
