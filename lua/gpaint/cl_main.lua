@@ -78,11 +78,15 @@ end
 function GPaint.TakeScreenshot( callback, format )
     local text = language.GetPhrase( "gpaint.screenshot_hint" )
 
-    hook.Add( "PostRender", "GPaint.TakeScreenshot", function()
-        if gui.IsGameUIVisible() then
-            hook.Remove( "PostRender", "GPaint.TakeScreenshot" )
+    hook.Add( "OnPauseMenuShow", "GPaint.TakeScreenshot", function()
+        hook.Remove( "OnPauseMenuShow", "GPaint.TakeScreenshot" )
+        hook.Remove( "PostRender", "GPaint.TakeScreenshot" )
+        return false
+    end )
 
-        elseif input.IsKeyDown( KEY_E ) then
+    hook.Add( "PostRender", "GPaint.TakeScreenshot", function()
+        if input.IsKeyDown( KEY_E ) then
+            hook.Remove( "OnPauseMenuShow", "GPaint.TakeScreenshot" )
             hook.Remove( "PostRender", "GPaint.TakeScreenshot" )
 
             local data = render.Capture( {
