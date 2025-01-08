@@ -148,6 +148,8 @@ if SERVER then
 end
 
 if CLIENT then
+    list.Set( "ContentCategoryIcons", "GPaint", "materials/icon16/paintbrush.png" )
+
     -- Shared files
     include( "gpaint/sh_stream.lua" )
 
