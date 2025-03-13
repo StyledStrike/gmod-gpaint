@@ -18,6 +18,9 @@ GPaint.MAX_STREAM_SIZE = 262144 -- 256 kibibytes
 -- Size limit for each stream chunk
 GPaint.CHUNK_SIZE = 49152 -- 48 kibibytes
 
+-- Limit the max. number of chunks
+GPaint.MAX_CHUNKS = 16
+
 -- If a chunk takes too long to transfer, it will cancel the stream
 GPaint.CHUNK_TIMEOUT = 10 -- seconds
 
@@ -296,8 +299,17 @@ net.Receive( "gpaint.stream_chunk", function( _, ply )
             return
         end
 
-        -- Make sure the metadata size is within a limit
+        -- Make sure the chunk count is within a limit
         local chunkCount = net.ReadUInt( 6 )
+
+        if chunkCount > GPaint.MAX_CHUNKS then
+            GPaint.PrintF( "Tried to read stream that had too many chunks! (%d/%d)", chunkCount, GPaint.MAX_CHUNKS )
+            SendResponse( GPaint.RESPONSE_BAD_REQUEST, ply )
+
+            return
+        end
+
+        -- Make sure the metadata size is within a limit
         local metadataBytes = net.ReadUInt( 16 )
 
         if metadataBytes > GPaint.MAX_METADATA_SIZE then
