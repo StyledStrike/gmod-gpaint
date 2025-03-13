@@ -288,7 +288,7 @@ net.Receive( "gpaint.stream_chunk", function( _, ply )
     local rs = readQueue[playerId]
 
     if not rs then
-        -- This a new ReadStream... But are we receiving it correctly?
+        -- This stream is new, are we receiving the first chunk?
         if chunkIndex ~= 1 then
             GPaint.PrintF( "Received stream chunk #%d without the previous chunk(s) from %s", chunkIndex, playerId )
             SendResponse( GPaint.RESPONSE_BAD_REQUEST, ply )
@@ -296,6 +296,7 @@ net.Receive( "gpaint.stream_chunk", function( _, ply )
             return
         end
 
+        -- Make sure the metadata size is within a limit
         local chunkCount = net.ReadUInt( 6 )
         local metadataBytes = net.ReadUInt( 16 )
 
@@ -307,7 +308,24 @@ net.Receive( "gpaint.stream_chunk", function( _, ply )
         end
 
         local metadata = net.ReadData( metadataBytes )
-        metadata = ToTable( Decompress( metadata ) )
+
+        metadata = Decompress( metadata )
+
+        if not metadata then
+            GPaint.PrintF( "Unable to decompress stream metadata!" )
+            SendResponse( GPaint.RESPONSE_BAD_REQUEST, ply )
+
+            return
+        end
+
+        metadata = ToTable( metadata )
+
+        if not metadata then
+            GPaint.PrintF( "Unable to parse stream metadata!" )
+            SendResponse( GPaint.RESPONSE_BAD_REQUEST, ply )
+
+            return
+        end
 
         -- Should we accept this stream?
         local accept = hook.Run( "GPaint_AllowStream", metadata, ply )

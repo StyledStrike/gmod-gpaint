@@ -11,6 +11,9 @@ GPaint.MAX_STROKES = 15
 -- Used on net.WriteUInt for the command ID
 GPaint.COMMAND_SIZE = 4
 
+-- Max. whitelist data size
+GPaint.MAX_WHITELIST_SIZE = 4096 -- 4 kibibytes
+
 -- Command IDs (Max. ID when COMMAND_SIZE = 4 is 15)
 GPaint.SUBSCRIBE = 0
 GPaint.UNSUBSCRIBE = 1
@@ -118,16 +121,27 @@ end
 
 function GPaint.ReadWhitelist( output )
     local len = ReadUInt( 16 )
+
+    if len > GPaint.MAX_WHITELIST_SIZE then
+        GPaint.PrintF( "Tried to read whitelist data that was too big! (%d/%d)", len, GPaint.MAX_WHITELIST_SIZE )
+        return
+    end
+
     local data = net.ReadData( len )
 
-    data = util.JSONToTable( util.Decompress( data ) )
+    data = util.Decompress( data )
+    if not data then return end
+
+    data = util.JSONToTable( data )
     if not data then return end
 
     table.Empty( output )
 
     -- `data` is a array, convert to a key-value table
     for _, id in ipairs( data ) do
-        output[id] = true
+        if type( id ) == "string" then
+            output[id] = true
+        end
     end
 end
 
