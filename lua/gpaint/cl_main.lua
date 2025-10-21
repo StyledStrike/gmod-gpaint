@@ -89,6 +89,14 @@ function GPaint.TakeScreenshot( callback, format )
             hook.Remove( "OnPauseMenuShow", "GPaint.TakeScreenshot" )
             hook.Remove( "PostRender", "GPaint.TakeScreenshot" )
 
+            if gui.IsConsoleVisible() then
+                -- render.Capture does not work if console is visible,
+                -- even if we're using a custom render target.
+                callback( "gpaint_unable_to_capture.png" )
+
+                return
+            end
+
             local data = render.Capture( {
                 format = format or "png",
                 alpha = false,
@@ -99,7 +107,7 @@ function GPaint.TakeScreenshot( callback, format )
 
             GPaint.EnsureDataDir()
 
-            local path = "gpaint/.temp/screenshot.png"
+            local path = "data/gpaint/.temp/screenshot.png"
             file.Write( path, data )
             callback( path )
         end

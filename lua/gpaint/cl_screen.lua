@@ -417,6 +417,12 @@ end
 
 --- Captures the render target's contents and returns the image data.
 function Screen:CaptureRT( format )
+    if gui.IsConsoleVisible() then
+        -- render.Capture does not work if console is visible,
+        -- even if we're using a custom render target.
+        return file.Read( "materials/gpaint_unable_to_capture.png", "GAME" )
+    end
+
     render.SetRenderTarget( self.rt )
 
     local data = render.Capture( {
@@ -446,11 +452,17 @@ end
 
 --- Loads and renders a image file on the render target.
 --- `path` is relative to the `garrysmod\data` directory.
-function Screen:RenderImageFile( path, transmit )
+function Screen:RenderImageFile( path, transmit, dontAppendDataPath )
     local entId = self.entity:EntIndex()
 
     self:RenderToRT( function()
-        local imageMaterial = Material( "../data/" .. path )
+        local matPath = path
+
+        if not dontAppendDataPath then
+            matPath = "../data/" .. path
+        end
+
+        local imageMaterial = Material( matPath )
         imageMaterial:GetTexture( "$basetexture" ):Download()
 
         render.SetMaterial( imageMaterial )

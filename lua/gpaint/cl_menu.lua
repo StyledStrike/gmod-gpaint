@@ -573,7 +573,7 @@ function Menu:OnClickScreenshot()
         self.screen.path = nil
         self.isUnsaved = true
         self:SetTitle()
-        self.screen:RenderImageFile( path, true )
+        self.screen:RenderImageFile( path, true, true )
     end )
 end
 
