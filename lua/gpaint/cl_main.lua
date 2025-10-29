@@ -107,9 +107,9 @@ function GPaint.TakeScreenshot( callback, format )
 
             GPaint.EnsureDataDir()
 
-            local path = "data/gpaint/.temp/screenshot.png"
+            local path = "gpaint/.temp/screenshot.png"
             file.Write( path, data )
-            callback( path )
+            callback( "data/" .. path )
         end
 
         cam.Start2D()
