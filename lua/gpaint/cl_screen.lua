@@ -581,14 +581,7 @@ function GPaint.DrawScreens()
     local aimEntity
 
     if RealTime() > focusCooldown and not vgui.CursorVisible() then
-        local tr = util.TraceLine{
-            start = eyePos,
-            endpos = eyePos + localPly:GetAimVector() * 200,
-            ignoreworld = true,
-            filter = localPly
-        }
-
-        aimEntity = tr.Entity
+        aimEntity = localPly:GetEyeTrace().Entity
     end
 
     -- Draw the screens
