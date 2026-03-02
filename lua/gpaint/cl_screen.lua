@@ -71,6 +71,7 @@ function GPaint.CreateScreen( ent )
     s.menu = GPaint.CreateMenu( s )
     s.menu:SetTitle()
 
+    ent.screen = s
     GPaint.screens[id] = s
     GPaint.UpdateScreenCount()
 
@@ -82,6 +83,10 @@ end
 
 function Screen:Remove()
     self.menu:Remove()
+
+    if IsValid( self.entity ) then
+        self.entity.screen = nil
+    end
 
     GPaint.FreeRT( self.rtIndex )
     GPaint.UpdateScreenCount()
@@ -310,7 +315,7 @@ local screenMat = CreateMaterial(
     "UnlitGeneric",
     {
         ["$nolod"] = 1,
-        ["$ignorez"] = 1,
+        ["$ignorez"] = 0,
         ["$vertexcolor"] = 1,
         ["$vertexalpha"] = 1
     }
@@ -508,34 +513,7 @@ end
 
 local focusedId, localPly
 
-local OverrideDepthEnable = render.OverrideDepthEnable
-local OverrideBlend = render.OverrideBlend
-
-local PushModelMatrix = cam.PushModelMatrix
-local PopModelMatrix = cam.PopModelMatrix
-
-local PushFilterMag = render.PushFilterMag
-local PushFilterMin = render.PushFilterMin
-local PopFilterMin = render.PopFilterMin
-local PopFilterMag = render.PopFilterMag
-
-local function ProcessScreen( s, isAiming )
-    PushModelMatrix( s.entity.screenMatrix )
-    OverrideDepthEnable( true, false )
-    OverrideBlend( true, BLEND_SRC_ALPHA, BLEND_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD )
-
-    PushFilterMag( TEXFILTER.LINEAR )
-    PushFilterMin( TEXFILTER.LINEAR )
-
-    s:Render()
-
-    PopFilterMin()
-    PopFilterMag()
-
-    OverrideBlend( false )
-    OverrideDepthEnable( false )
-    PopModelMatrix()
-
+local function ProcessInput( s, isAiming )
     local x, y
 
     if isAiming then
@@ -565,53 +543,57 @@ end
 
 local IsValid = IsValid
 local LocalPlayer = LocalPlayer
+local IsCursorVisible = vgui.CursorVisible
+local DistToSqr = FindMetaTable( "Vector" ).DistToSqr
+
+local MAX_INPUT_DISTANCE = 250 * 250
 
 local screens = GPaint.screens
 local focusCooldown = 0
 
-function GPaint.DrawScreens()
+local function ProcessScreens()
     focusedId = nil
     localPly = LocalPlayer()
 
+    local maxRenderDistance = GetMaxRenderDistance()
     local eyePos = localPly:GetShootPos()
-    local maxDistance = GetMaxRenderDistance()
 
     -- Use the trace system to detect
     -- which screen should receive input
     local aimEntity
 
-    if RealTime() > focusCooldown and not vgui.CursorVisible() then
+    if RealTime() > focusCooldown and not IsCursorVisible() then
         aimEntity = localPly:GetEyeTrace().Entity
     end
 
-    -- Draw the screens
-    cam.Start3D()
+    local ent, dist
 
     for id, s in pairs( screens ) do
-        local ent = s.entity
+        ent = s.entity
 
         if IsValid( ent ) then
+            dist = DistToSqr( eyePos, ent:GetPos() )
+
+            s.shouldRender = not ent:IsDormant() and dist < maxRenderDistance
             s:Think()
 
-            if not ent:IsDormant() and eyePos:DistToSqr( ent:GetPos() ) < maxDistance then
-                ProcessScreen( s, ent == aimEntity )
+            if s.shouldRender and dist < MAX_INPUT_DISTANCE then
+                ProcessInput( s, ent == aimEntity )
             end
         else
             s:Remove()
             screens[id] = nil
         end
     end
-
-    cam.End3D()
 end
 
 function GPaint.UpdateScreenCount()
     local count = table.Count( screens )
 
-    if count == 0 then
-        hook.Remove( "PreDrawHUD", "GPaint.DrawScreens" )
+    if count > 0 then
+        hook.Add( "Think", "GPaint.ProcessScreens", ProcessScreens )
     else
-        hook.Add( "PreDrawHUD", "GPaint.DrawScreens", GPaint.DrawScreens )
+        hook.Remove( "Think", "GPaint.ProcessScreens" )
     end
 end
 

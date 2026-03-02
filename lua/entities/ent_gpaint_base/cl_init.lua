@@ -56,3 +56,45 @@ function ENT:GetCursorPos( ply )
     local hitPos = self.screenMatrix:GetInverseTR() * ( start + dir * b )
     return hitPos.x / offset.scale.x ^ 2, hitPos.y / offset.scale.y ^ 2
 end
+
+local PushModelMatrix = cam.PushModelMatrix
+local PopModelMatrix = cam.PopModelMatrix
+
+local PushFilterMag = render.PushFilterMag
+local PushFilterMin = render.PushFilterMin
+local PopFilterMin = render.PopFilterMin
+local PopFilterMag = render.PopFilterMag
+
+local GetRenderTarget = render.GetRenderTarget
+local OverrideDepthEnable = render.OverrideDepthEnable
+local GetToneMappingScaleLinear = render.GetToneMappingScaleLinear
+local SetToneMappingScaleLinear = render.SetToneMappingScaleLinear
+
+local tuneNoHDR = Vector( 0.80, 0, 0 )
+
+function ENT:Draw( flags )
+    self:DrawModel( flags )
+
+    if GetRenderTarget() ~= nil then return end
+
+    local screen = self.screen
+    if not screen then return end
+    if not screen.shouldRender then return end
+
+    local oldTune = GetToneMappingScaleLinear()
+    SetToneMappingScaleLinear( tuneNoHDR )
+    OverrideDepthEnable( true, false )
+
+    PushModelMatrix( self.screenMatrix )
+    PushFilterMag( TEXFILTER.LINEAR )
+    PushFilterMin( TEXFILTER.LINEAR )
+
+    screen:Render()
+
+    PopFilterMin()
+    PopFilterMag()
+    PopModelMatrix()
+
+    OverrideDepthEnable( false )
+    SetToneMappingScaleLinear( oldTune )
+end
