@@ -609,12 +609,19 @@ hook.Add( "PhysgunDrop", "GPaint.AllowFocusing", function( ply )
 end )
 
 -- Blocks some binds when focusing on any screen
+-- that the local player is allowed to draw on
 local blockBinds = {
     ["+attack"] = true,
     ["+attack2"] = true,
     ["+reload"] = true
 }
 
-hook.Add( "PlayerBindPress", "GPaint.BlockBindsWhenFocused", function( _, bind )
-    if blockBinds[bind] and focusedId then return true end
+hook.Add( "PlayerBindPress", "GPaint.BlockBindsWhenFocused", function( ply, bind )
+    if not blockBinds[bind] or not focusedId then return end
+
+    local s = screens[focusedId]
+    if not s or not IsValid( s.entity ) then return end
+
+    -- Only block if we can actually draw on this screen
+    if s.entity:CanPlayerDraw( ply ) then return true end
 end )
